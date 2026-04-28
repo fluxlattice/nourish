@@ -133,7 +133,12 @@ function PlanView({plan, profile, onRestart}) {
       if (currentMeal) meals.push(currentMeal);
       days.push({ day: dayNum, meals });
     });
-    return days;
+    const seen = new Set();
+    return days.filter(d => {
+      if (seen.has(d.day)) return false;
+      seen.add(d.day);
+      return true;
+    }).slice(0, 7);
   };
 
   const getSection = (key, next) => {
