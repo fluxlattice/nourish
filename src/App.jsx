@@ -175,9 +175,9 @@ function PlanView({plan, profile, onRestart}) {
         <div>
           {days.length > 0 ? (
             <div>
-              <div style={{display:"flex",gap:"6px",overflowX:"auto",paddingBottom:"8px",marginBottom:"12px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px",marginBottom:"12px"}}>
                 {days.map((d,i)=>(
-                  <button key={i} onClick={()=>setExpandedDay(i)} style={{flexShrink:0,padding:"8px 14px",borderRadius:"10px",border:"none",background:expandedDay===i?"linear-gradient(135deg,#86C575,#4ECDC4)":"rgba(255,255,255,0.07)",color:expandedDay===i?"#0a1f0a":"rgba(255,255,255,0.5)",fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"Georgia,serif"}}>
+                  <button key={i} onClick={()=>setExpandedDay(i)} style={{padding:"8px 4px",borderRadius:"10px",border:"none",background:expandedDay===i?"linear-gradient(135deg,#86C575,#4ECDC4)":"rgba(255,255,255,0.07)",color:expandedDay===i?"#0a1f0a":"rgba(255,255,255,0.5)",fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"Georgia,serif"}}>
                     Day {d.day}
                   </button>
                 ))}
