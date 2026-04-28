@@ -19,25 +19,48 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 4000,
+        stream: true,
         messages: [{ role: "user", content: message }],
       }),
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      return res.status(response.status).json({
-        error: data.error?.message || "API error"
-      });
+      const err = await response.json();
+      return res.status(response.status).json({ error: err.error?.message || "API error" });
     }
 
-    const text = (data.content || [])
-      .filter(b => b.type === "text")
-      .map(b => b.text)
-      .join("");
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
-    return res.status(200).json({ content: text });
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n").filter(line => line.trim());
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+          if (data === "[DONE]") {
+            res.write("data: [DONE]\n\n");
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+              res.write("data: " + JSON.stringify({ text: parsed.delta.text }) + "\n\n");
+            }
+          } catch (e) {}
+        }
+      }
+    }
+    res.end();
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Server error" });
+    res.status(500).json({ error: err.message || "Server error" });
   }
 }

@@ -145,21 +145,49 @@ export default function App() {
       +"Shopping list by category (Produce, Proteins, Grains & Pantry, Dairy & Alternatives) with estimated costs. Total ~$"+weekly+"/week.\n\n"
       +"TIPS\n"
       +"5 specific tips for this person based on their "+goalLabel+" goal, $"+p.budget+"/month budget, and restrictions: "+restr+".";
-    try {
-     const res = await fetch("/api/chat", {
-  method: "POST",
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify({ message: msg })
-});
-const raw = await res.text();
-let data;
-try { data = JSON.parse(raw); } catch(e) { throw new Error("Parse: " + raw.slice(0,150)); }
-if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
-const text = data.content || "";
-if (!text) throw new Error("Empty response");
-setPlan(text);
-    } catch(e){setError(String(e.message||e));}
-    setLoading(false);
+  try {
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ message: msg })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "HTTP " + res.status);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = "";
+  setPlan("");
+  setLoading(false);
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value);
+    const lines = chunk.split("\n").filter(l => l.trim());
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const data = line.slice(6);
+        if (data === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.text) {
+            fullText += parsed.text;
+            setPlan(fullText);
+          }
+        } catch(e) {}
+      }
+    }
+  }
+} catch(e) {
+  setError(String(e.message || e));
+  setLoading(false);
+}
   };
 
   return (
