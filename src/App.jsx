@@ -91,42 +91,167 @@ function LoadingView() {
 
 function PlanView({plan, profile, onRestart}) {
   const [tab, setTab] = useState("meals");
+  const [expandedDay, setExpandedDay] = useState(0);
   const scrollRef = useRef(null);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [plan]);
+
+  const goalLabel = profile.goal==="lose"?"Weight Loss":profile.goal==="gain"?"Build Muscle":"Balanced";
+
+  // Parse days from plan text
+  const parseDays = () => {
+    const days = [];
+    const dayRegex = /Day (\d+)[:\s]/gi;
+    const mealSection = (() => {
+      const i = plan.indexOf("MEAL PLAN");
+      const j = plan.indexOf("SHOPPING");
+      return i === -1 ? plan : plan.slice(i + 9, j === -1 ? undefined : j);
+    })();
+
+    const parts = mealSection.split(/(?=Day \d+[:\s])/i).filter(p => p.trim());
+    parts.forEach(part => {
+      const titleMatch = part.match(/Day (\d+)/i);
+      if (!titleMatch) return;
+      const dayNum = titleMatch[1];
+      const lines = part.split("\n").filter(l => l.trim());
+      const meals = [];
+      let currentMeal = null;
+      lines.slice(1).forEach(line => {
+        const l = line.trim();
+        if (!l) return;
+        if (/^(breakfast|lunch|dinner|snack)/i.test(l)) {
+          if (currentMeal) meals.push(currentMeal);
+          currentMeal = { type: l.split(/[:\-]/)[0].trim(), content: l.replace(/^[^:\-]+[:\-]\s*/, "") };
+        } else if (currentMeal) {
+          currentMeal.content += " " + l;
+        }
+      });
+      if (currentMeal) meals.push(currentMeal);
+      days.push({ day: dayNum, meals });
+    });
+    return days;
+  };
+
   const getSection = (key, next) => {
     const i = plan.indexOf(key);
-    if(i===-1) return plan;
-    const s = i+key.length;
-    const j = next ? plan.indexOf(next,s) : plan.length;
-    return (j===-1?plan.slice(s):plan.slice(s,j)).trim();
+    if (i === -1) return "";
+    const start = i + key.length;
+    const j = next ? plan.indexOf(next, start) : plan.length;
+    return (j === -1 ? plan.slice(start) : plan.slice(start, j)).trim();
   };
-  const goalLabel = profile.goal==="lose"?"Weight Loss":profile.goal==="gain"?"Build Muscle":"Balanced";
+
+  const days = parseDays();
+  const shoppingText = getSection("SHOPPING", "TIPS");
+  const tipsText = getSection("TIPS", null);
+
+  const mealIcons = { breakfast:"☀️", lunch:"🌤", dinner:"🌙", snack:"🍎" };
+  const mealColors = { breakfast:"rgba(255,200,80,0.1)", lunch:"rgba(80,200,180,0.1)", dinner:"rgba(130,100,255,0.1)", snack:"rgba(255,130,100,0.1)" };
+
+  const tabs = [["meals","🍽","Meals"],["shopping","🛒","Shopping"],["tips","💡","Tips"]];
+
   return (
     <div className="plan-enter">
-      <div style={{textAlign:"center",marginBottom:"24px"}}>
-        <div style={{display:"inline-block",background:"rgba(134,197,117,0.15)",border:"1px solid rgba(134,197,117,0.3)",borderRadius:"100px",padding:"5px 14px",marginBottom:"12px"}}>
+      <div style={{textAlign:"center",marginBottom:"20px"}}>
+        <div style={{display:"inline-block",background:"rgba(134,197,117,0.15)",border:"1px solid rgba(134,197,117,0.3)",borderRadius:"100px",padding:"5px 14px",marginBottom:"10px"}}>
           <span style={{color:"#86C575",fontSize:"12px",fontWeight:"600",letterSpacing:"1px"}}>✨ PLAN READY</span>
         </div>
-        <h2 style={{color:"#fff",fontSize:"24px",fontWeight:"700",margin:"0 0 6px"}}>Your {goalLabel} Plan</h2>
+        <h2 style={{color:"#fff",fontSize:"22px",fontWeight:"700",margin:"0 0 4px"}}>Your {goalLabel} Plan</h2>
         <p style={{color:"rgba(255,255,255,0.4)",fontSize:"13px",margin:0}}>${profile.budget}/month · {profile.meals} meals/day</p>
       </div>
+
       <div style={{display:"flex",gap:"4px",background:"rgba(255,255,255,0.05)",borderRadius:"14px",padding:"4px",marginBottom:"16px"}}>
-        {[["meals","🍽 Meals"],["shopping","🛒 Shopping"],["tips","💡 Tips"]].map(([id,label])=>(
-          <button key={id} onClick={()=>setTab(id)} style={GS.tab(tab===id)}>{label}</button>
+        {tabs.map(([id,icon,label])=>(
+          <button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"9px 6px",borderRadius:"10px",border:"none",background:tab===id?"rgba(134,197,117,0.18)":"transparent",color:tab===id?"#86C575":"rgba(255,255,255,0.4)",fontSize:"12px",fontWeight:tab===id?"700":"400",cursor:"pointer",fontFamily:"Georgia,serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>
+            {icon} {label}
+          </button>
         ))}
       </div>
-      <div ref={scrollRef} style={{background:"rgba(0,0,0,0.25)",borderRadius:"18px",border:"1px solid rgba(255,255,255,0.07)",padding:"18px",maxHeight:"380px",overflowY:"auto",marginBottom:"18px"}}>
-        <pre style={{color:"rgba(255,255,255,0.85)",fontSize:"13px",lineHeight:"1.85",whiteSpace:"pre-wrap",margin:0,fontFamily:"Georgia,serif"}}>
-          {tab==="meals"&&getSection("MEAL PLAN","SHOPPING")}
-          {tab==="shopping"&&getSection("SHOPPING","TIPS")}
-          {tab==="tips"&&getSection("TIPS",null)}
-        </pre>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+
+      {tab==="meals" && (
+        <div>
+          {days.length > 0 ? (
+            <div>
+              <div style={{display:"flex",gap:"6px",overflowX:"auto",paddingBottom:"8px",marginBottom:"12px"}}>
+                {days.map((d,i)=>(
+                  <button key={i} onClick={()=>setExpandedDay(i)} style={{flexShrink:0,padding:"8px 14px",borderRadius:"10px",border:"none",background:expandedDay===i?"linear-gradient(135deg,#86C575,#4ECDC4)":"rgba(255,255,255,0.07)",color:expandedDay===i?"#0a1f0a":"rgba(255,255,255,0.5)",fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"Georgia,serif"}}>
+                    Day {d.day}
+                  </button>
+                ))}
+              </div>
+              {days[expandedDay] && (
+                <div style={{animation:"fadeScaleIn 0.3s ease forwards"}}>
+                  <div style={{marginBottom:"6px",color:"rgba(255,255,255,0.4)",fontSize:"12px",letterSpacing:"1px",textTransform:"uppercase"}}>Day {days[expandedDay].day}</div>
+                  {days[expandedDay].meals.length > 0 ? (
+                    days[expandedDay].meals.map((meal,i)=>{
+                      const type = meal.type.toLowerCase().includes("breakfast")?"breakfast":meal.type.toLowerCase().includes("lunch")?"lunch":meal.type.toLowerCase().includes("snack")?"snack":"dinner";
+                      return (
+                        <div key={i} style={{background:mealColors[type]||"rgba(255,255,255,0.05)",borderRadius:"14px",border:"1px solid rgba(255,255,255,0.08)",padding:"14px",marginBottom:"10px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
+                            <span style={{fontSize:"18px"}}>{mealIcons[type]||"🍽"}</span>
+                            <span style={{color:"rgba(255,255,255,0.5)",fontSize:"11px",fontWeight:"600",letterSpacing:"1px",textTransform:"uppercase"}}>{meal.type}</span>
+                          </div>
+                          <p style={{color:"#fff",fontSize:"14px",margin:0,lineHeight:"1.6"}}>{meal.content}</p>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"16px"}}>
+                      <p style={{color:"rgba(255,255,255,0.7)",fontSize:"14px",lineHeight:"1.8",margin:0,whiteSpace:"pre-wrap"}}>{plan.split(/Day \d+/i)[expandedDay+1]||""}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div ref={scrollRef} style={{background:"rgba(0,0,0,0.2)",borderRadius:"14px",padding:"16px",maxHeight:"360px",overflowY:"auto"}}>
+              <pre style={{color:"rgba(255,255,255,0.85)",fontSize:"13px",lineHeight:"1.85",whiteSpace:"pre-wrap",margin:0,fontFamily:"Georgia,serif"}}>{getSection("MEAL PLAN","SHOPPING")}</pre>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab==="shopping" && (
+        <div style={{background:"rgba(0,0,0,0.2)",borderRadius:"14px",padding:"16px",maxHeight:"360px",overflowY:"auto"}}>
+          {shoppingText.split("\n").filter(l=>l.trim()).map((line,i)=>{
+            const isCat = /^(produce|proteins|grains|dairy|pantry|total)/i.test(line.trim());
+            const isItem = line.trim().startsWith("-") || line.trim().startsWith("•");
+            return (
+              <div key={i} style={{marginBottom: isCat?"12px":"4px"}}>
+                {isCat ? (
+                  <div style={{color:"#86C575",fontSize:"12px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginTop:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(134,197,117,0.2)"}}>{line.trim()}</div>
+                ) : (
+                  <div style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"4px 0"}}>
+                    <span style={{color:"#86C575",fontSize:"12px",marginTop:"2px"}}>→</span>
+                    <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.5"}}>{line.replace(/^[-•]\s*/,"").trim()}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab==="tips" && (
+        <div style={{maxHeight:"360px",overflowY:"auto"}}>
+          {tipsText.split("\n").filter(l=>l.trim()).map((line,i)=>{
+            const isNum = /^\d+\./.test(line.trim());
+            return isNum ? (
+              <div key={i} style={{background:"rgba(134,197,117,0.07)",borderRadius:"14px",border:"1px solid rgba(134,197,117,0.15)",padding:"14px",marginBottom:"10px",display:"flex",gap:"12px",alignItems:"flex-start"}}>
+                <div style={{width:"26px",height:"26px",borderRadius:"50%",background:"linear-gradient(135deg,#86C575,#4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"#0a1f0a",flexShrink:0}}>{line.trim()[0]}</div>
+                <p style={{color:"rgba(255,255,255,0.85)",fontSize:"13px",lineHeight:"1.6",margin:0}}>{line.replace(/^\d+\.\s*/,"")}</p>
+              </div>
+            ) : (
+              <p key={i} style={{color:"rgba(255,255,255,0.5)",fontSize:"13px",lineHeight:"1.6",margin:"0 0 6px",paddingLeft:"4px"}}>{line}</p>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginTop:"16px"}}>
         <button onClick={onRestart} style={GS.btnBack}>← Start Over</button>
         <button style={GS.btnPrimary} onClick={()=>{const b=new Blob([plan],{type:"text/plain"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download="meal-plan.txt";a.click();}}>↓ Download</button>
       </div>
