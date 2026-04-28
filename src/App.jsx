@@ -112,11 +112,11 @@ function PlanView({plan, profile, onRestart}) {
       return i === -1 ? plan : plan.slice(i + 9, j === -1 ? undefined : j);
     })();
 
-    const parts = mealSection.split(/(?=Day \d+[:\s])/i).filter(p => p.trim());
+    const parts = mealSection.split(/(?=\*{0,2}Day \d+\*{0,2}[:\s\-])/i).filter(p => p.trim());
     parts.forEach(part => {
       const titleMatch = part.match(/Day (\d+)/i);
       if (!titleMatch) return;
-      const dayNum = titleMatch[1];
+      const dayNum = parseInt(titleMatch[1]);
       const lines = part.split("\n").filter(l => l.trim());
       const meals = [];
       let currentMeal = null;
