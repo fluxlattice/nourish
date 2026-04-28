@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const DIETARY = [
   {id:"gluten-free",label:"Gluten-Free",icon:"🌾"},
@@ -80,6 +80,12 @@ function LoadingView() {
 
 function PlanView({plan, profile, onRestart}) {
   const [tab, setTab] = useState("meals");
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [plan]);
   const getSection = (key, next) => {
     const i = plan.indexOf(key);
     if(i===-1) return plan;
@@ -102,7 +108,7 @@ function PlanView({plan, profile, onRestart}) {
           <button key={id} onClick={()=>setTab(id)} style={GS.tab(tab===id)}>{label}</button>
         ))}
       </div>
-      <div style={{background:"rgba(0,0,0,0.25)",borderRadius:"18px",border:"1px solid rgba(255,255,255,0.07)",padding:"18px",maxHeight:"380px",overflowY:"auto",marginBottom:"18px"}}>
+      <div ref={scrollRef} style={{background:"rgba(0,0,0,0.25)",borderRadius:"18px",border:"1px solid rgba(255,255,255,0.07)",padding:"18px",maxHeight:"380px",overflowY:"auto",marginBottom:"18px"}}>
         <pre style={{color:"rgba(255,255,255,0.85)",fontSize:"13px",lineHeight:"1.85",whiteSpace:"pre-wrap",margin:0,fontFamily:"Georgia,serif"}}>
           {tab==="meals"&&getSection("MEAL PLAN","SHOPPING")}
           {tab==="shopping"&&getSection("SHOPPING","TIPS")}
@@ -179,6 +185,7 @@ export default function App() {
           if (parsed.text) {
             fullText += parsed.text;
             setPlan(fullText);
+            await new Promise(r => setTimeout(r, 20));
           }
         } catch(e) {}
       }
