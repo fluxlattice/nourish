@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 const DIETARY = [
   {id:"gluten-free",label:"Gluten-Free",icon:"🌾"},
@@ -163,13 +164,14 @@ setPlan(text);
   };
 
   return (
-    <div style={GS.page}>
-      <div style={GS.center}>
-        <div style={{textAlign:"center",padding:"32px 0 28px"}}>
-          <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"56px",height:"56px",borderRadius:"18px",background:"linear-gradient(135deg,#86C575,#4ECDC4)",marginBottom:"14px",boxShadow:"0 8px 28px rgba(134,197,117,0.4)",fontSize:"26px"}}>🌿</div>
-          <h1 style={{color:"#fff",fontSize:"32px",fontWeight:"700",margin:"0 0 4px",letterSpacing:"-0.5px"}}>Nourish</h1>
-          <p style={{color:"rgba(255,255,255,0.35)",fontSize:"12px",letterSpacing:"2px",textTransform:"uppercase",margin:0}}>AI Meal Planning</p>
-        </div>
+    <>
+      <div style={GS.page}>
+        <div style={GS.center}>
+          <div style={{textAlign:"center",padding:"32px 0 28px"}}>
+            <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"56px",height:"56px",borderRadius:"18px",background:"linear-gradient(135deg,#86C575,#4ECDC4)",marginBottom:"14px",boxShadow:"0 8px 28px rgba(134,197,117,0.4)",fontSize:"26px"}}>🌿</div>
+            <h1 style={{color:"#fff",fontSize:"32px",fontWeight:"700",margin:"0 0 4px",letterSpacing:"-0.5px"}}>Nourish</h1>
+            <p style={{color:"rgba(255,255,255,0.35)",fontSize:"12px",letterSpacing:"2px",textTransform:"uppercase",margin:0}}>AI Meal Planning</p>
+          </div>
 
         <div style={GS.card}>
           {loading ? <LoadingView /> : plan ? (
@@ -290,7 +292,9 @@ setPlan(text);
           )}
         </div>
         <p style={{textAlign:"center",color:"rgba(255,255,255,0.15)",fontSize:"11px",marginTop:"20px",letterSpacing:"0.5px"}}>Powered by AI · Not medical advice</p>
+        </div>
       </div>
-    </div>
+      <Analytics />
+    </>
   );
 }
