@@ -24,6 +24,17 @@ const ACTIVITIES = [
   {id:"very",label:"Very Active",desc:"Daily intense exercise"},
 ];
 
+const animStyles = `
+  @keyframes slideInRight { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes slideInLeft { from { opacity:0; transform:translateX(-40px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes fadeScaleIn { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+  @keyframes bounceIn { 0% { transform:scale(1); } 30% { transform:scale(0.96); } 60% { transform:scale(1.03); } 100% { transform:scale(1); } }
+  .step-enter { animation: slideInRight 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  .step-back { animation: slideInLeft 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  .plan-enter { animation: fadeScaleIn 0.4s ease forwards; }
+  .btn-bounce:active { animation: bounceIn 0.3s ease forwards; }
+`;
+
 const GS = {
   page: {minHeight:"100vh",background:"linear-gradient(135deg,#0a1628 0%,#0d2010 50%,#0a1628 100%)",fontFamily:"Georgia,serif",padding:"24px 20px 48px",boxSizing:"border-box"},
   center: {maxWidth:"460px",margin:"0 auto"},
@@ -95,7 +106,7 @@ function PlanView({plan, profile, onRestart}) {
   };
   const goalLabel = profile.goal==="lose"?"Weight Loss":profile.goal==="gain"?"Build Muscle":"Balanced";
   return (
-    <div>
+    <div className="plan-enter">
       <div style={{textAlign:"center",marginBottom:"24px"}}>
         <div style={{display:"inline-block",background:"rgba(134,197,117,0.15)",border:"1px solid rgba(134,197,117,0.3)",borderRadius:"100px",padding:"5px 14px",marginBottom:"12px"}}>
           <span style={{color:"#86C575",fontSize:"12px",fontWeight:"600",letterSpacing:"1px"}}>✨ PLAN READY</span>
@@ -125,6 +136,8 @@ function PlanView({plan, profile, onRestart}) {
 
 export default function App() {
   const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState("forward");
+  const [animKey, setAnimKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState(null);
   const [error, setError] = useState(null);
@@ -199,6 +212,7 @@ export default function App() {
 
   return (
     <div style={GS.page}>
+      <style>{animStyles}</style>
       <div style={GS.center}>
         <div style={{textAlign:"center",padding:"32px 0 28px"}}>
           <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"56px",height:"56px",borderRadius:"18px",background:"linear-gradient(135deg,#86C575,#4ECDC4)",marginBottom:"14px",boxShadow:"0 8px 28px rgba(134,197,117,0.4)",fontSize:"26px"}}>🌿</div>
@@ -214,6 +228,7 @@ export default function App() {
               <Dots step={step} />
               {error && <div style={GS.err}>{error}</div>}
 
+              <div key={animKey} className={direction === "forward" ? "step-enter" : "step-back"}>
               {step===0 && (
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:"44px",marginBottom:"16px"}}>👋</div>
@@ -227,7 +242,7 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                  <button style={GS.btnPrimary} onClick={()=>setStep(1)}>Get Started →</button>
+                  <button className="btn-bounce" style={GS.btnPrimary} onClick={()=>{ setDirection("forward"); setAnimKey(k=>k+1); setStep(1); }}>Get Started →</button>
                 </div>
               )}
 
@@ -311,11 +326,21 @@ export default function App() {
                 </div>
               )}
 
+              </div>
+
               {step>0&&(
                 <div style={GS.row}>
-                  <button onClick={()=>setStep(s=>s-1)} style={GS.btnBack}>← Back</button>
+                  <button onClick={()=>{ setDirection("back"); setAnimKey(k=>k+1); setStep(s=>s-1); }} style={GS.btnBack}>← Back</button>
                   <div style={{flex:1}}>
-                    <button onClick={()=>{if(step<3)setStep(s=>s+1);else generate();}} style={canNext()?GS.btnPrimary:GS.btnDisabled} disabled={!canNext()}>
+                    <button
+                      className="btn-bounce"
+                      onClick={()=>{
+                        if(step<3){ setDirection("forward"); setAnimKey(k=>k+1); setStep(s=>s+1); }
+                        else generate();
+                      }}
+                      style={canNext()?GS.btnPrimary:GS.btnDisabled}
+                      disabled={!canNext()}
+                    >
                       {step===3?"✨ Generate My Plan":"Continue →"}
                     </button>
                   </div>
