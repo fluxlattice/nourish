@@ -149,6 +149,28 @@ function PlanView({plan, profile, onRestart}) {
     return (j === -1 ? plan.slice(start) : plan.slice(start, j)).trim();
   };
 
+  const parseRecipes = () => {
+    const mealSection = getSection("MEAL PLAN", "SHOPPING");
+    const recipeMatch = mealSection.match(/##?\s*RECIPES?([\s\S]*)/i);
+    if (!recipeMatch) return [];
+    const recipeText = recipeMatch[1];
+    const recipes = [];
+    const parts = recipeText.split(/(?=\*{0,2}Recipe\s*\d+)/i).filter(p => p.trim());
+    parts.forEach(part => {
+      const titleMatch = part.match(/Recipe\s*\d+[:\s\*]+([^\n\*]+)/i);
+      if (!titleMatch) return;
+      const title = titleMatch[1].trim();
+      const ingredientMatch = part.match(/Ingredients?[:\*\s]+([\s\S]+?)(?=\*?Steps?|$)/i);
+      const stepsMatch = part.match(/Steps?[:\*\s]+([\s\S]+?)(?=Recipe\s*\d+|$)/i);
+      recipes.push({
+        title,
+        ingredients: ingredientMatch ? ingredientMatch[1].trim() : "",
+        steps: stepsMatch ? stepsMatch[1].trim() : ""
+      });
+    });
+    return recipes;
+  };
+
   const days = parseDays();
   const shoppingText = getSection("SHOPPING", "TIPS");
   const tipsText = getSection("TIPS", null);
@@ -156,7 +178,7 @@ function PlanView({plan, profile, onRestart}) {
   const mealIcons = { breakfast:"☀️", lunch:"🌤", dinner:"🌙", snack:"🍎" };
   const mealColors = { breakfast:"rgba(255,200,80,0.1)", lunch:"rgba(80,200,180,0.1)", dinner:"rgba(130,100,255,0.1)", snack:"rgba(255,130,100,0.1)" };
 
-  const tabs = [["meals","🍽","Meals"],["shopping","🛒","Shopping"],["tips","💡","Tips"]];
+  const tabs = [["meals","🍽","Meals"],["shopping","🛒","Shopping"],["recipes","📖","Recipes"],["tips","💡","Tips"]];
 
   return (
     <div className="plan-enter">
@@ -237,6 +259,45 @@ function PlanView({plan, profile, onRestart}) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {tab==="recipes" && (
+        <div style={{maxHeight:"360px",overflowY:"auto"}}>
+          {parseRecipes().length > 0 ? parseRecipes().map((recipe, i) => (
+            <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
+                <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(135deg,#86C575,#4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",fontWeight:"700",color:"#0a1f0a",flexShrink:0}}>{i+1}</div>
+                <h3 style={{color:"#fff",fontSize:"15px",fontWeight:"700",margin:0}}>{recipe.title}</h3>
+              </div>
+              {recipe.ingredients && (
+                <div style={{marginBottom:"12px"}}>
+                  <div style={{color:"#86C575",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(134,197,117,0.2)"}}>🧺 Ingredients</div>
+                  {recipe.ingredients.split(/\s*-\s+/).filter(l=>l.trim()).map((ing,j)=>(
+                    <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"3px 0"}}>
+                      <span style={{color:"#86C575",fontSize:"12px",marginTop:"2px",flexShrink:0}}>→</span>
+                      <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.5"}}>{ing.trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {recipe.steps && (
+                <div>
+                  <div style={{color:"#4ECDC4",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(78,205,196,0.2)"}}>👨‍🍳 Steps</div>
+                  {recipe.steps.split(/\d+\.\s+/).filter(l=>l.trim()).map((step,j)=>(
+                    <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                      <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(78,205,196,0.15)",border:"1px solid rgba(78,205,196,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:"700",color:"#4ECDC4",flexShrink:0,marginTop:"1px"}}>{j+1}</div>
+                      <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.6"}}>{step.trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )) : (
+            <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"20px",textAlign:"center"}}>
+              <p style={{color:"rgba(255,255,255,0.4)",fontSize:"14px",margin:0}}>No recipes found in this plan. Try generating a new plan.</p>
+            </div>
+          )}
         </div>
       )}
 
