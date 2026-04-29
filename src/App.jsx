@@ -239,6 +239,7 @@ function PlanView({plan, profile, onRestart}) {
 {/* Recipes tab */}
 {dayTab==="recipes" && (
   <div style={{animation:"fadeScaleIn 0.3s ease forwards",maxHeight:"380px",overflowY:"auto"}}>
+    <pre style={{color:"#86C575",fontSize:"11px",whiteSpace:"pre-wrap",marginBottom:"12px"}}>{getSection("RECIPES","SHOPPING").slice(0,500)}</pre>
     {(recipeDays[days[activeDay]?.day] || []).length > 0
       ? (recipeDays[days[activeDay]?.day] || []).map((meal,i)=>(
           <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
