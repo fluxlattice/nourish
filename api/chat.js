@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { message } = req.body;
+  const { message, stream = true } = req.body;
   if (!message) {
     return res.status(400).json({ error: "No message provided" });
   }
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 8000,
-        stream: true,
+        stream: stream,
         messages: [{ role: "user", content: message }],
       }),
     });
@@ -27,6 +27,12 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const err = await response.json();
       return res.status(response.status).json({ error: err.error?.message || "API error" });
+    }
+
+    if (!stream) {
+      const data = await response.json();
+      const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+      return res.status(200).json({ content: text });
     }
 
     res.setHeader("Content-Type", "text/event-stream");
@@ -39,10 +45,8 @@ export default async function handler(req, res) {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       const chunk = decoder.decode(value);
       const lines = chunk.split("\n").filter(line => line.trim());
-
       for (const line of lines) {
         if (line.startsWith("data: ")) {
           const data = line.slice(6);

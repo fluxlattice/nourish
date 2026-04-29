@@ -360,63 +360,89 @@ export default function App() {
     const goalLabel = p.goal==="lose"?"Weight Loss":p.goal==="gain"?"Build Muscle":"Stay Balanced";
     const restr = p.restrictions.length?p.restrictions.join(", "):"None";
     const snacks = p.meals==="3+"?", and 2 snacks":"";
-    const msg = "You are a professional nutritionist. Create a detailed 7-day meal plan.\n\n"
+
+    const planMsg = "You are a professional nutritionist. Create a detailed 7-day meal plan.\n\n"
       +"PROFILE: Age:"+p.age+" Gender:"+p.gender+" Weight:"+p.weight+"lbs Height:"+p.height+"in\n"
       +"Goal:"+goalLabel+" Activity:"+p.activity+" Meals/day:"+p.meals+" Skill:"+p.skill+"\n"
       +"Budget:$"+p.budget+"/month (~$"+weekly+"/week) Restrictions:"+restr+"\n\n"
-      +"Use EXACTLY these four section headers on their own lines:\n\n"
+      +"Use EXACTLY these three section headers on their own lines:\n\n"
       +"MEAL PLAN\n"
       +"7 days. Each day: 'Day 1', 'Day 2' etc on its own line. Then breakfast, lunch, dinner"+snacks+". Each meal: name, calories in parentheses, one sentence description. No recipes here.\n\n"
-      +"RECIPES\n"
-      +"For every single meal across all 7 days, provide a full recipe. Format each as:\nDay [N] - [Meal Type]: [Meal Name]\nIngredients:\n- ingredient 1\n- ingredient 2\nSteps:\n1. step 1\n2. step 2\n\n"
       +"SHOPPING\n"
       +"Shopping list by category (Produce, Proteins, Grains & Pantry, Dairy & Alternatives) with estimated costs. Total ~$"+weekly+"/week.\n\n"
       +"TIPS\n"
       +"5 specific tips for this person based on their "+goalLabel+" goal, $"+p.budget+"/month budget, and restrictions: "+restr+".";
-  try {
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ message: msg })
-  });
 
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "HTTP " + res.status);
-  }
+    const recipeMsg = "You are a professional nutritionist. Create full recipes for a 7-day meal plan.\n\n"
+      +"PROFILE: Goal:"+goalLabel+" Restrictions:"+restr+" Skill:"+p.skill+"\n\n"
+      +"Meals per day: "+p.meals+(snacks?" with 2 snacks":"")+"\n\n"
+      +"Provide a full recipe for EVERY meal across all 7 days. Format EXACTLY as:\n"
+      +"Day [N] - [Meal Type]: [Meal Name]\n"
+      +"Ingredients:\n"
+      +"- ingredient 1\n"
+      +"- ingredient 2\n"
+      +"Steps:\n"
+      +"1. step 1\n"
+      +"2. step 2\n\n"
+      +"Start with Day 1 - Breakfast and go through Day 7 - Dinner"+snacks+".";
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = "";
-  setPlan("");
-  setLoading(false);
+    try {
+    // First call — stream the meal plan, shopping, tips
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: planMsg, stream: true })
+    });
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "HTTP " + res.status);
+    }
 
-    const chunk = decoder.decode(value);
-    const lines = chunk.split("\n").filter(l => l.trim());
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+    setPlan("");
+    setLoading(false);
 
-    for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        const data = line.slice(6);
-        if (data === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.text) {
-            fullText += parsed.text;
-            setPlan(fullText);
-            await new Promise(r => setTimeout(r, 20));
-          }
-        } catch(e) {}
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n").filter(l => l.trim());
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.text) {
+              fullText += parsed.text;
+              setPlan(fullText);
+              await new Promise(r => setTimeout(r, 20));
+            }
+          } catch(e) {}
+        }
       }
     }
+
+    // Second call — fetch recipes separately (no stream)
+    const recipeRes = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: recipeMsg, stream: false })
+    });
+
+    const recipeData = await recipeRes.json();
+    const recipeText = recipeData.content || "";
+
+    // Append recipes to plan
+    setPlan(fullText + "\n\nRECIPES\n" + recipeText);
+
+  } catch(e) {
+    setError(String(e.message || e));
+    setLoading(false);
   }
-} catch(e) {
-  setError(String(e.message || e));
-  setLoading(false);
-}
   };
 
   return (
