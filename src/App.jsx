@@ -90,8 +90,8 @@ function LoadingView() {
 }
 
 function PlanView({plan, profile, onRestart}) {
-  const [tab, setTab] = useState("meals");
-  const [expandedDay, setExpandedDay] = useState(0);
+  const [activeDay, setActiveDay] = useState(0);
+  const [dayTab, setDayTab] = useState("meals");
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -102,18 +102,23 @@ function PlanView({plan, profile, onRestart}) {
 
   const goalLabel = profile.goal==="lose"?"Weight Loss":profile.goal==="gain"?"Build Muscle":"Balanced";
 
-  // Parse days from plan text
+  const getSection = (key, next) => {
+    const i = plan.indexOf(key);
+    if (i === -1) return "";
+    const start = i + key.length;
+    const j = next ? plan.indexOf(next, start) : plan.length;
+    return (j === -1 ? plan.slice(start) : plan.slice(start, j)).trim();
+  };
+
   const parseDays = () => {
     const days = [];
-    const dayRegex = /Day (\d+)[:\s]/gi;
-  const mealSection = (() => {
-  const i = plan.indexOf("MEAL PLAN");
-  const j = plan.indexOf("RECIPES");
-  const k = plan.indexOf("SHOPPING");
-  const end = j !== -1 ? j : k !== -1 ? k : plan.length;
-  return i === -1 ? plan : plan.slice(i + 9, end);
-})();
-
+    const mealSection = (() => {
+      const i = plan.indexOf("MEAL PLAN");
+      const j = plan.indexOf("RECIPES");
+      const k = plan.indexOf("SHOPPING");
+      const end = j !== -1 ? j : k !== -1 ? k : plan.length;
+      return i === -1 ? plan : plan.slice(i + 9, end);
+    })();
     const parts = mealSection.split(/(?=\*{0,2}Day \d+\*{0,2}[:\s\-])/i).filter(p => p.trim());
     parts.forEach(part => {
       const titleMatch = part.match(/Day (\d+)/i);
@@ -143,50 +148,42 @@ function PlanView({plan, profile, onRestart}) {
     }).slice(0, 7);
   };
 
-  const getSection = (key, next) => {
-    const i = plan.indexOf(key);
-    if (i === -1) return "";
-    const start = i + key.length;
-    const j = next ? plan.indexOf(next, start) : plan.length;
-    return (j === -1 ? plan.slice(start) : plan.slice(start, j)).trim();
+  const parseRecipes = () => {
+    const recipesRawText = getSection("RECIPES", "SHOPPING");
+    const days = [];
+    const dayParts = recipesRawText.split(/(?=Day \d+)/i).filter(p => p.trim());
+    dayParts.forEach(part => {
+      const dayMatch = part.match(/Day (\d+)/i);
+      if (!dayMatch) return;
+      const dayNum = parseInt(dayMatch[1]);
+      const meals = [];
+      const mealParts = part.split(/(?=Day \d+ -)/i).filter(p => p.trim());
+      mealParts.forEach(mp => {
+        const headerMatch = mp.match(/Day \d+ - ([^:\n]+):\s*([^\n]+)/i);
+        if (!headerMatch) return;
+        const mealType = headerMatch[1].trim();
+        const mealName = headerMatch[2].trim();
+        const ingMatch = mp.match(/Ingredients?:\s*([\s\S]+?)(?=Steps?:|$)/i);
+        const stepsMatch = mp.match(/Steps?:\s*([\s\S]+?)(?=Day \d+|$)/i);
+        meals.push({
+          type: mealType,
+          name: mealName,
+          ingredients: ingMatch ? ingMatch[1].trim() : "",
+          steps: stepsMatch ? stepsMatch[1].trim() : ""
+        });
+      });
+      if (meals.length > 0) days.push({ day: dayNum, meals });
+    });
+    return days.slice(0, 7);
   };
 
-const parseRecipes = () => {
-  const days = [];
-  const dayParts = recipesRawText.split(/(?=Day \d+)/i).filter(p => p.trim());
-  dayParts.forEach(part => {
-    const dayMatch = part.match(/Day (\d+)/i);
-    if (!dayMatch) return;
-    const dayNum = parseInt(dayMatch[1]);
-    const meals = [];
-    const mealParts = part.split(/(?=Day \d+ -)/i).filter(p => p.trim());
-    mealParts.forEach(mp => {
-      const headerMatch = mp.match(/Day \d+ - ([^:\n]+):\s*([^\n]+)/i);
-      if (!headerMatch) return;
-      const mealType = headerMatch[1].trim();
-      const mealName = headerMatch[2].trim();
-      const ingMatch = mp.match(/Ingredients?:\s*([\s\S]+?)(?=Steps?:|$)/i);
-      const stepsMatch = mp.match(/Steps?:\s*([\s\S]+?)(?=Day \d+|$)/i);
-      meals.push({
-        type: mealType,
-        name: mealName,
-        ingredients: ingMatch ? ingMatch[1].trim() : "",
-        steps: stepsMatch ? stepsMatch[1].trim() : ""
-      });
-    });
-    if (meals.length > 0) days.push({ day: dayNum, meals });
-  });
-  return days.slice(0, 7);
-};
   const days = parseDays();
+  const recipeDays = parseRecipes();
   const shoppingText = getSection("SHOPPING", "TIPS");
   const tipsText = getSection("TIPS", null);
-  const recipesRawText = getSection("RECIPES", "SHOPPING");
 
   const mealIcons = { breakfast:"☀️", lunch:"🌤", dinner:"🌙", snack:"🍎" };
   const mealColors = { breakfast:"rgba(255,200,80,0.1)", lunch:"rgba(80,200,180,0.1)", dinner:"rgba(130,100,255,0.1)", snack:"rgba(255,130,100,0.1)" };
-
-  const tabs = [["meals","🍽","Meals"],["shopping","🛒","Shopping"],["recipes","📖","Recipes"],["tips","💡","Tips"]];
 
   return (
     <div className="plan-enter">
@@ -198,64 +195,108 @@ const parseRecipes = () => {
         <p style={{color:"rgba(255,255,255,0.4)",fontSize:"13px",margin:0}}>${profile.budget}/month · {profile.meals} meals/day</p>
       </div>
 
+      {/* Day selector */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px",marginBottom:"12px"}}>
+        {days.map((d,i)=>(
+          <button key={i} onClick={()=>{setActiveDay(i);setDayTab("meals");}} style={{padding:"8px 4px",borderRadius:"10px",border:"none",background:activeDay===i?"linear-gradient(135deg,#86C575,#4ECDC4)":"rgba(255,255,255,0.07)",color:activeDay===i?"#0a1f0a":"rgba(255,255,255,0.5)",fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"Georgia,serif"}}>
+            Day {d.day}
+          </button>
+        ))}
+      </div>
+
+      {/* Per-day tabs */}
       <div style={{display:"flex",gap:"4px",background:"rgba(255,255,255,0.05)",borderRadius:"14px",padding:"4px",marginBottom:"16px"}}>
-        {tabs.map(([id,icon,label])=>(
-          <button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"9px 6px",borderRadius:"10px",border:"none",background:tab===id?"rgba(134,197,117,0.18)":"transparent",color:tab===id?"#86C575":"rgba(255,255,255,0.4)",fontSize:"12px",fontWeight:tab===id?"700":"400",cursor:"pointer",fontFamily:"Georgia,serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>
+        {[["meals","🍽","Meals"],["recipes","📖","Recipes"]].map(([id,icon,label])=>(
+          <button key={id} onClick={()=>setDayTab(id)} style={{flex:1,padding:"9px 6px",borderRadius:"10px",border:"none",background:dayTab===id?"rgba(134,197,117,0.18)":"transparent",color:dayTab===id?"#86C575":"rgba(255,255,255,0.4)",fontSize:"12px",fontWeight:dayTab===id?"700":"400",cursor:"pointer",fontFamily:"Georgia,serif",display:"flex",alignItems:"center",justifyContent:"center",gap:"4px"}}>
             {icon} {label}
           </button>
         ))}
       </div>
 
-      {tab==="meals" && (
-        <div>
-          {days.length > 0 ? (
-            <div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px",marginBottom:"12px"}}>
-                {days.map((d,i)=>(
-                  <button key={i} onClick={()=>setExpandedDay(i)} style={{padding:"8px 4px",borderRadius:"10px",border:"none",background:expandedDay===i?"linear-gradient(135deg,#86C575,#4ECDC4)":"rgba(255,255,255,0.07)",color:expandedDay===i?"#0a1f0a":"rgba(255,255,255,0.5)",fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"Georgia,serif"}}>
-                    Day {d.day}
-                  </button>
-                ))}
-              </div>
-              {days[expandedDay] && (
-                <div style={{animation:"fadeScaleIn 0.3s ease forwards"}}>
-                  <div style={{marginBottom:"6px",color:"rgba(255,255,255,0.4)",fontSize:"12px",letterSpacing:"1px",textTransform:"uppercase"}}>Day {days[expandedDay].day}</div>
-                  {days[expandedDay].meals.length > 0 ? (
-                    days[expandedDay].meals.map((meal,i)=>{
-                      const type = meal.type.toLowerCase().includes("breakfast")?"breakfast":meal.type.toLowerCase().includes("lunch")?"lunch":meal.type.toLowerCase().includes("snack")?"snack":"dinner";
-                      return (
-                        <div key={i} style={{background:mealColors[type]||"rgba(255,255,255,0.05)",borderRadius:"14px",border:"1px solid rgba(255,255,255,0.08)",padding:"14px",marginBottom:"10px"}}>
-                          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
-                            <span style={{fontSize:"18px"}}>{mealIcons[type]||"🍽"}</span>
-                            <span style={{color:"rgba(255,255,255,0.5)",fontSize:"11px",fontWeight:"600",letterSpacing:"1px",textTransform:"uppercase"}}>{meal.type}</span>
-                          </div>
-                          <p style={{color:"#fff",fontSize:"14px",margin:0,lineHeight:"1.6"}}>{meal.content}</p>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"16px"}}>
-                      <p style={{color:"rgba(255,255,255,0.7)",fontSize:"14px",lineHeight:"1.8",margin:0,whiteSpace:"pre-wrap"}}>{plan.split(/Day \d+/i)[expandedDay+1]||""}</p>
-                    </div>
-                  )}
+      {/* Meals tab */}
+      {dayTab==="meals" && days[activeDay] && (
+        <div style={{animation:"fadeScaleIn 0.3s ease forwards"}}>
+          <div style={{marginBottom:"8px",color:"rgba(255,255,255,0.4)",fontSize:"12px",letterSpacing:"1px",textTransform:"uppercase"}}>Day {days[activeDay].day}</div>
+          {days[activeDay].meals.length > 0 ? days[activeDay].meals.map((meal,i)=>{
+            const type = meal.type.toLowerCase().includes("breakfast")?"breakfast":meal.type.toLowerCase().includes("lunch")?"lunch":meal.type.toLowerCase().includes("snack")?"snack":"dinner";
+            return (
+              <div key={i} style={{background:mealColors[type]||"rgba(255,255,255,0.05)",borderRadius:"14px",border:"1px solid rgba(255,255,255,0.08)",padding:"14px",marginBottom:"10px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
+                  <span style={{fontSize:"18px"}}>{mealIcons[type]||"🍽"}</span>
+                  <span style={{color:"rgba(255,255,255,0.5)",fontSize:"11px",fontWeight:"600",letterSpacing:"1px",textTransform:"uppercase"}}>{meal.type}</span>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div ref={scrollRef} style={{background:"rgba(0,0,0,0.2)",borderRadius:"14px",padding:"16px",maxHeight:"360px",overflowY:"auto"}}>
-              <pre style={{color:"rgba(255,255,255,0.85)",fontSize:"13px",lineHeight:"1.85",whiteSpace:"pre-wrap",margin:0,fontFamily:"Georgia,serif"}}>{getSection("MEAL PLAN","SHOPPING")}</pre>
+                <p style={{color:"#fff",fontSize:"14px",margin:0,lineHeight:"1.6"}}>{meal.content}</p>
+              </div>
+            );
+          }) : (
+            <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"16px"}}>
+              <p style={{color:"rgba(255,255,255,0.5)",fontSize:"14px",margin:0}}>No meals found for this day.</p>
             </div>
           )}
         </div>
       )}
 
-      {tab==="shopping" && (
-        <div style={{background:"rgba(0,0,0,0.2)",borderRadius:"14px",padding:"16px",maxHeight:"360px",overflowY:"auto"}}>
+      {/* Recipes tab */}
+      {dayTab==="recipes" && (
+        <div style={{animation:"fadeScaleIn 0.3s ease forwards",maxHeight:"380px",overflowY:"auto"}}>
+          {recipeDays[activeDay] ? recipeDays[activeDay].meals.map((meal,i)=>(
+            <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
+                <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(135deg,#86C575,#4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"#0a1f0a",flexShrink:0}}>
+                  {meal.type.toLowerCase().includes("breakfast")?"☀️":meal.type.toLowerCase().includes("lunch")?"🌤":meal.type.toLowerCase().includes("snack")?"🍎":"🌙"}
+                </div>
+                <div>
+                  <div style={{color:"rgba(255,255,255,0.45)",fontSize:"10px",fontWeight:"600",letterSpacing:"1px",textTransform:"uppercase"}}>{meal.type}</div>
+                  <div style={{color:"#fff",fontSize:"14px",fontWeight:"700"}}>{meal.name}</div>
+                </div>
+              </div>
+              {meal.ingredients && (
+                <div style={{marginBottom:"12px"}}>
+                  <div style={{color:"#86C575",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(134,197,117,0.2)"}}>🧺 Ingredients</div>
+                  {meal.ingredients.split("\n").filter(l=>l.trim()).map((ing,j)=>(
+                    <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"3px 0"}}>
+                      <span style={{color:"#86C575",fontSize:"12px",marginTop:"2px",flexShrink:0}}>→</span>
+                      <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.5"}}>{ing.replace(/^-\s*/,"").trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {meal.steps && (
+                <div>
+                  <div style={{color:"#4ECDC4",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(78,205,196,0.2)"}}>👨‍🍳 Steps</div>
+                  {meal.steps.split("\n").filter(l=>l.trim()).map((step,j)=>(
+                    <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                      <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(78,205,196,0.15)",border:"1px solid rgba(78,205,196,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:"700",color:"#4ECDC4",flexShrink:0,marginTop:"1px"}}>{j+1}</div>
+                      <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.6"}}>{step.replace(/^\d+\.\s*/,"").trim()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )) : (
+            <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"20px",textAlign:"center"}}>
+              <p style={{color:"rgba(255,255,255,0.4)",fontSize:"14px",margin:0}}>Generate a new plan to see recipes here.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Global Shopping & Tips */}
+      <div style={{display:"flex",gap:"8px",marginTop:"16px",marginBottom:"4px"}}>
+        {[["shopping","🛒 Shopping"],["tips","💡 Tips"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setDayTab(id)} style={{flex:1,padding:"10px",borderRadius:"12px",border:"1px solid rgba(255,255,255,0.08)",background:dayTab===id?"rgba(134,197,117,0.12)":"rgba(255,255,255,0.04)",color:dayTab===id?"#86C575":"rgba(255,255,255,0.4)",fontSize:"12px",fontWeight:dayTab===id?"700":"400",cursor:"pointer",fontFamily:"Georgia,serif"}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Shopping */}
+      {dayTab==="shopping" && (
+        <div style={{background:"rgba(0,0,0,0.2)",borderRadius:"14px",padding:"16px",maxHeight:"320px",overflowY:"auto",marginTop:"12px"}}>
           {shoppingText.split("\n").filter(l=>l.trim()).map((line,i)=>{
             const isCat = /^(produce|proteins|grains|dairy|pantry|total)/i.test(line.trim());
-            const isItem = line.trim().startsWith("-") || line.trim().startsWith("•");
             return (
-              <div key={i} style={{marginBottom: isCat?"12px":"4px"}}>
+              <div key={i} style={{marginBottom:isCat?"12px":"4px"}}>
                 {isCat ? (
                   <div style={{color:"#86C575",fontSize:"12px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginTop:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(134,197,117,0.2)"}}>{line.trim()}</div>
                 ) : (
@@ -270,61 +311,9 @@ const parseRecipes = () => {
         </div>
       )}
 
-{tab==="recipes" && (
-  <div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px",marginBottom:"12px"}}>
-      {parseRecipes().map((d,i)=>(
-        <button key={i} onClick={()=>setExpandedDay(i)} style={{padding:"8px 4px",borderRadius:"10px",border:"none",background:expandedDay===i?"linear-gradient(135deg,#86C575,#4ECDC4)":"rgba(255,255,255,0.07)",color:expandedDay===i?"#0a1f0a":"rgba(255,255,255,0.5)",fontSize:"12px",fontWeight:"600",cursor:"pointer",fontFamily:"Georgia,serif"}}>
-          Day {d.day}
-        </button>
-      ))}
-    </div>
-    <div style={{maxHeight:"360px",overflowY:"auto"}}>
-      {parseRecipes()[expandedDay] ? parseRecipes()[expandedDay].meals.map((meal,i)=>(
-        <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
-            <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(135deg,#86C575,#4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"#0a1f0a",flexShrink:0}}>
-              {meal.type.toLowerCase().includes("breakfast")?"☀️":meal.type.toLowerCase().includes("lunch")?"🌤":meal.type.toLowerCase().includes("snack")?"🍎":"🌙"}
-            </div>
-            <div>
-              <div style={{color:"rgba(255,255,255,0.45)",fontSize:"10px",fontWeight:"600",letterSpacing:"1px",textTransform:"uppercase"}}>{meal.type}</div>
-              <div style={{color:"#fff",fontSize:"14px",fontWeight:"700"}}>{meal.name}</div>
-            </div>
-          </div>
-          {meal.ingredients && (
-            <div style={{marginBottom:"12px"}}>
-              <div style={{color:"#86C575",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(134,197,117,0.2)"}}>🧺 Ingredients</div>
-              {meal.ingredients.split("\n").filter(l=>l.trim()).map((ing,j)=>(
-                <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"3px 0"}}>
-                  <span style={{color:"#86C575",fontSize:"12px",marginTop:"2px",flexShrink:0}}>→</span>
-                  <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.5"}}>{ing.replace(/^-\s*/,"").trim()}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {meal.steps && (
-            <div>
-              <div style={{color:"#4ECDC4",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(78,205,196,0.2)"}}>👨‍🍳 Steps</div>
-              {meal.steps.split("\n").filter(l=>l.trim()).map((step,j)=>(
-                <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                  <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(78,205,196,0.15)",border:"1px solid rgba(78,205,196,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:"700",color:"#4ECDC4",flexShrink:0,marginTop:"1px"}}>{j+1}</div>
-                  <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.6"}}>{step.replace(/^\d+\.\s*/,"").trim()}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )) : (
-        <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"20px",textAlign:"center"}}>
-          <p style={{color:"rgba(255,255,255,0.4)",fontSize:"14px",margin:0}}>Generate a new plan to see recipes here.</p>
-        </div>
-      )}
-    </div>
-  </div>
-)}
-
-      {tab==="tips" && (
-        <div style={{maxHeight:"360px",overflowY:"auto"}}>
+      {/* Tips */}
+      {dayTab==="tips" && (
+        <div style={{maxHeight:"320px",overflowY:"auto",marginTop:"12px"}}>
           {tipsText.split("\n").filter(l=>l.trim()).map((line,i)=>{
             const isNum = /^\d+\./.test(line.trim());
             return isNum ? (
@@ -333,7 +322,7 @@ const parseRecipes = () => {
                 <p style={{color:"rgba(255,255,255,0.85)",fontSize:"13px",lineHeight:"1.6",margin:0}}>{line.replace(/^\d+\.\s*/,"")}</p>
               </div>
             ) : (
-              <p key={i} style={{color:"rgba(255,255,255,0.5)",fontSize:"13px",lineHeight:"1.6",margin:"0 0 6px",paddingLeft:"4px"}}>{line}</p>
+              <p key={i} style={{color:"rgba(255,255,255,0.5)",fontSize:"13px",lineHeight:"1.6",margin:"0 0 6px"}}>{line}</p>
             );
           })}
         </div>
