@@ -150,31 +150,28 @@ function PlanView({plan, profile, onRestart}) {
 
   const parseRecipes = () => {
     const recipesRawText = getSection("RECIPES", "SHOPPING");
-    const days = [];
-    const dayParts = recipesRawText.split(/(?=Day \d+)/i).filter(p => p.trim());
-    dayParts.forEach(part => {
-      const dayMatch = part.match(/Day (\d+)/i);
-      if (!dayMatch) return;
-      const dayNum = parseInt(dayMatch[1]);
-      const meals = [];
-      const mealParts = part.split(/(?=Day \d+ -)/i).filter(p => p.trim());
-      mealParts.forEach(mp => {
-        const headerMatch = mp.match(/Day \d+ - ([^:\n]+):\s*([^\n]+)/i);
-        if (!headerMatch) return;
-        const mealType = headerMatch[1].trim();
-        const mealName = headerMatch[2].trim();
-        const ingMatch = mp.match(/Ingredients?:\s*([\s\S]+?)(?=Steps?:|$)/i);
-        const stepsMatch = mp.match(/Steps?:\s*([\s\S]+?)(?=Day \d+|$)/i);
-        meals.push({
-          type: mealType,
-          name: mealName,
-          ingredients: ingMatch ? ingMatch[1].trim() : "",
-          steps: stepsMatch ? stepsMatch[1].trim() : ""
-        });
+    const byDay = {};
+    
+    const chunks = recipesRawText.split(/(?=Day \d+ - )/i).filter(p => p.trim());
+    
+    chunks.forEach(chunk => {
+      const headerMatch = chunk.match(/Day (\d+) - ([^:]+):\s*([^\n]+)/i);
+      if (!headerMatch) return;
+      const dayNum = parseInt(headerMatch[1]);
+      const mealType = headerMatch[2].trim();
+      const mealName = headerMatch[3].trim();
+      const ingMatch = chunk.match(/Ingredients?:\s*([\s\S]+?)(?=Steps?:|$)/i);
+      const stepsMatch = chunk.match(/Steps?:\s*([\s\S]+?)(?=Day \d+ -|$)/i);
+      if (!byDay[dayNum]) byDay[dayNum] = [];
+      byDay[dayNum].push({
+        type: mealType,
+        name: mealName,
+        ingredients: ingMatch ? ingMatch[1].trim() : "",
+        steps: stepsMatch ? stepsMatch[1].trim() : ""
       });
-      if (meals.length > 0) days.push({ day: dayNum, meals });
     });
-    return days.slice(0, 7);
+    
+    return byDay;
   };
 
   const days = parseDays();
@@ -239,7 +236,6 @@ function PlanView({plan, profile, onRestart}) {
 {/* Recipes tab */}
 {dayTab==="recipes" && (
   <div style={{animation:"fadeScaleIn 0.3s ease forwards",maxHeight:"380px",overflowY:"auto"}}>
-    <pre style={{color:"#86C575",fontSize:"11px",whiteSpace:"pre-wrap",marginBottom:"12px"}}>{getSection("RECIPES","SHOPPING").slice(0,500)}</pre>
     {(recipeDays[days[activeDay]?.day] || []).length > 0
       ? (recipeDays[days[activeDay]?.day] || []).map((meal,i)=>(
           <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
