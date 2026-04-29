@@ -239,7 +239,7 @@ function PlanView({plan, profile, onRestart}) {
       {/* Recipes tab */}
       {dayTab==="recipes" && (
         <div style={{animation:"fadeScaleIn 0.3s ease forwards",maxHeight:"380px",overflowY:"auto"}}>
-          {recipeDays[activeDay] ? recipeDays[activeDay].meals.map((meal,i)=>(
+         {(recipeDays.find(d => d.day === days[activeDay]?.day) || recipeDays[activeDay])?.meals.map((meal,i)=>(
             <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
               <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
                 <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(135deg,#86C575,#4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"#0a1f0a",flexShrink:0}}>
