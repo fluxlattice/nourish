@@ -236,51 +236,53 @@ function PlanView({plan, profile, onRestart}) {
         </div>
       )}
 
-      {/* Recipes tab */}
-      {dayTab==="recipes" && (
-        <div style={{animation:"fadeScaleIn 0.3s ease forwards",maxHeight:"380px",overflowY:"auto"}}>
-         {(recipeDays.find(d => d.day === days[activeDay]?.day) || recipeDays[activeDay])?.meals.map((meal,i)=>(
-            <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
-              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
-                <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(135deg,#86C575,#4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"#0a1f0a",flexShrink:0}}>
-                  {meal.type.toLowerCase().includes("breakfast")?"☀️":meal.type.toLowerCase().includes("lunch")?"🌤":meal.type.toLowerCase().includes("snack")?"🍎":"🌙"}
-                </div>
-                <div>
-                  <div style={{color:"rgba(255,255,255,0.45)",fontSize:"10px",fontWeight:"600",letterSpacing:"1px",textTransform:"uppercase"}}>{meal.type}</div>
-                  <div style={{color:"#fff",fontSize:"14px",fontWeight:"700"}}>{meal.name}</div>
-                </div>
+{/* Recipes tab */}
+{dayTab==="recipes" && (
+  <div style={{animation:"fadeScaleIn 0.3s ease forwards",maxHeight:"380px",overflowY:"auto"}}>
+    {(recipeDays[days[activeDay]?.day] || []).length > 0
+      ? (recipeDays[days[activeDay]?.day] || []).map((meal,i)=>(
+          <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
+              <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(135deg,#86C575,#4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"#0a1f0a",flexShrink:0}}>
+                {meal.type.toLowerCase().includes("breakfast")?"☀️":meal.type.toLowerCase().includes("lunch")?"🌤":meal.type.toLowerCase().includes("snack")?"🍎":"🌙"}
               </div>
-              {meal.ingredients && (
-                <div style={{marginBottom:"12px"}}>
-                  <div style={{color:"#86C575",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(134,197,117,0.2)"}}>🧺 Ingredients</div>
-                  {meal.ingredients.split("\n").filter(l=>l.trim()).map((ing,j)=>(
-                    <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"3px 0"}}>
-                      <span style={{color:"#86C575",fontSize:"12px",marginTop:"2px",flexShrink:0}}>→</span>
-                      <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.5"}}>{ing.replace(/^-\s*/,"").trim()}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {meal.steps && (
-                <div>
-                  <div style={{color:"#4ECDC4",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(78,205,196,0.2)"}}>👨‍🍳 Steps</div>
-                  {meal.steps.split("\n").filter(l=>l.trim()).map((step,j)=>(
-                    <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                      <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(78,205,196,0.15)",border:"1px solid rgba(78,205,196,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:"700",color:"#4ECDC4",flexShrink:0,marginTop:"1px"}}>{j+1}</div>
-                      <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.6"}}>{step.replace(/^\d+\.\s*/,"").trim()}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div>
+                <div style={{color:"rgba(255,255,255,0.45)",fontSize:"10px",fontWeight:"600",letterSpacing:"1px",textTransform:"uppercase"}}>{meal.type}</div>
+                <div style={{color:"#fff",fontSize:"14px",fontWeight:"700"}}>{meal.name}</div>
+              </div>
             </div>
-         )}
-{(recipeDays[days[activeDay]?.day] || []).length === 0 && (
-  <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"20px",textAlign:"center"}}>
-    <p style={{color:"rgba(255,255,255,0.4)",fontSize:"14px",margin:0}}>Generate a new plan to see recipes here.</p>
+            {meal.ingredients && (
+              <div style={{marginBottom:"12px"}}>
+                <div style={{color:"#86C575",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(134,197,117,0.2)"}}>🧺 Ingredients</div>
+                {meal.ingredients.split("\n").filter(l=>l.trim()).map((ing,j)=>(
+                  <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"3px 0"}}>
+                    <span style={{color:"#86C575",fontSize:"12px",marginTop:"2px",flexShrink:0}}>→</span>
+                    <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.5"}}>{ing.replace(/^-\s*/,"").trim()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {meal.steps && (
+              <div>
+                <div style={{color:"#4ECDC4",fontSize:"11px",fontWeight:"700",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px",paddingBottom:"4px",borderBottom:"1px solid rgba(78,205,196,0.2)"}}>👨‍🍳 Steps</div>
+                {meal.steps.split("\n").filter(l=>l.trim()).map((step,j)=>(
+                  <div key={j} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                    <div style={{width:"20px",height:"20px",borderRadius:"50%",background:"rgba(78,205,196,0.15)",border:"1px solid rgba(78,205,196,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:"700",color:"#4ECDC4",flexShrink:0,marginTop:"1px"}}>{j+1}</div>
+                    <span style={{color:"rgba(255,255,255,0.75)",fontSize:"13px",lineHeight:"1.6"}}>{step.replace(/^\d+\.\s*/,"").trim()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))
+      : (
+          <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"20px",textAlign:"center"}}>
+            <p style={{color:"rgba(255,255,255,0.4)",fontSize:"14px",margin:0}}>Generate a new plan to see recipes here.</p>
+          </div>
+        )
+    }
   </div>
 )}
-        </div>
-      )}
 
       {/* Global Shopping & Tips */}
       <div style={{display:"flex",gap:"8px",marginTop:"16px",marginBottom:"4px"}}>
