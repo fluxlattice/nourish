@@ -273,11 +273,12 @@ function PlanView({plan, profile, onRestart}) {
                 </div>
               )}
             </div>
-          )) : (
-            <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"20px",textAlign:"center"}}>
-              <p style={{color:"rgba(255,255,255,0.4)",fontSize:"14px",margin:0}}>Generate a new plan to see recipes here.</p>
-            </div>
-          )}
+         )}
+{(recipeDays[days[activeDay]?.day] || []).length === 0 && (
+  <div style={{background:"rgba(255,255,255,0.04)",borderRadius:"14px",padding:"20px",textAlign:"center"}}>
+    <p style={{color:"rgba(255,255,255,0.4)",fontSize:"14px",margin:0}}>Generate a new plan to see recipes here.</p>
+  </div>
+)}
         </div>
       )}
 
