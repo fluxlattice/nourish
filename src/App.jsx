@@ -178,6 +178,11 @@ function PlanView({plan, profile, onRestart}) {
   const recipeDays = parseRecipes();
   const shoppingText = getSection("SHOPPING", "TIPS");
   const tipsText = getSection("TIPS", null);
+  console.log("SHOPPING:", shoppingText.slice(0, 200));
+  console.log("TIPS:", tipsText.slice(0, 200));
+  console.log("Full plan length:", plan.length);
+  console.log("SHOPPING index:", plan.indexOf("SHOPPING"));
+  console.log("TIPS index:", plan.indexOf("TIPS"));
 
   const mealIcons = { breakfast:"☀️", lunch:"🌤", dinner:"🌙", snack:"🍎" };
   const mealColors = { breakfast:"rgba(255,200,80,0.1)", lunch:"rgba(80,200,180,0.1)", dinner:"rgba(130,100,255,0.1)", snack:"rgba(255,130,100,0.1)" };
