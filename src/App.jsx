@@ -356,6 +356,28 @@ export default function App() {
 
   const generate = async () => {
     setLoading(true); setError(null);
+
+    // Get user location
+    let userLocation = "United States";
+    try {
+      const coords = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+      });
+      const geoRes = await fetch(
+        "https://nominatim.openstreetmap.org/reverse?lat=" + 
+        coords.coords.latitude + "&lon=" + coords.coords.longitude + 
+        "&format=json"
+      );
+      const geoData = await geoRes.json();
+      const city = geoData.address?.city || geoData.address?.town || geoData.address?.county || "";
+      const state = geoData.address?.state || "";
+      const country = geoData.address?.country || "United States";
+      userLocation = [city, state, country].filter(Boolean).join(", ");
+    } catch(e) {
+      // Location denied or failed — use default
+      userLocation = "United States";
+    }
+
     const weekly = Math.round((Number(p.budget)||300)/4);
     const goalLabel = p.goal==="lose"?"Weight Loss":p.goal==="gain"?"Build Muscle":"Stay Balanced";
     const restr = p.restrictions.length?p.restrictions.join(", "):"None";
@@ -369,7 +391,7 @@ export default function App() {
       +"MEAL PLAN\n"
       +"7 days. Each day: 'Day 1', 'Day 2' etc on its own line. Then breakfast, lunch, dinner"+snacks+". Each meal: name, calories in parentheses, one sentence description. No recipes here.\n\n"
       +"SHOPPING\n"
-      +"Shopping list by category (Produce, Proteins, Grains & Pantry, Dairy & Alternatives) with estimated costs. Total ~$"+weekly+"/week.\n\n"
+      +"Shopping list by category (Produce, Proteins, Grains & Pantry, Dairy & Alternatives) with estimated costs based on typical grocery prices in "+userLocation+". Total ~$"+weekly+"/week.\n\n"
       +"TIPS\n"
       +"5 specific tips for this person based on their "+goalLabel+" goal, $"+p.budget+"/month budget, and restrictions: "+restr+".";
 
