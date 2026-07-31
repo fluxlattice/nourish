@@ -107,7 +107,11 @@
   position: relative;
   z-index: 2;
   background-color: var(--card);
-  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--rule-blue) 31px 32px),
+  background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(var(--rule-line) - 1px),
+      var(--rule-blue) calc(var(--rule-line) - 1px) var(--rule-line)
+    ),
     linear-gradient(to right, transparent 0 34px, var(--rule-red) 34px 35.5px, transparent 35.5px);
   background-position: 0 58px, 0 0;
   background-repeat: repeat-y, no-repeat;
@@ -198,7 +202,7 @@
 .step-sub {
   color: var(--ink-muted);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: var(--rule-line);
   margin: 0 0 24px;
 }
 
@@ -807,7 +811,7 @@ select.control {
 .meal-text {
   color: var(--ink);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: var(--rule-line);
   margin: 0;
 }
 
@@ -976,13 +980,13 @@ select.control {
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  padding: 3px 0;
+  padding: 0;
 }
 
 .ingredient-check {
   width: 13px;
   height: 13px;
-  margin-top: 3px;
+  margin-top: 9px;
   border: 1.6px solid var(--ink-muted);
   border-radius: 3px;
   transform: rotate(-3deg);
@@ -993,14 +997,14 @@ select.control {
 .step-row span {
   color: var(--ink-muted);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: var(--rule-line);
 }
 
 .step-row {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 5px 0;
+  padding: 0;
 }
 
 .step-badge {
@@ -1016,7 +1020,7 @@ select.control {
   font-weight: 700;
   color: var(--gold);
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 5px;
 }
 
 .shopping-panel {

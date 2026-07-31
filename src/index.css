@@ -25,6 +25,7 @@
   --ink-faint: rgba(58, 46, 34, 0.4);
   --rule-blue: rgba(84, 112, 150, 0.4);
   --rule-red: rgba(176, 68, 58, 0.55);
+  --rule-line: 32px;
 
   /* Stamp red (primary accent) */
   --accent: #b5473c;
