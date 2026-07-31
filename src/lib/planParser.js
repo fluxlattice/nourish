@@ -12,7 +12,8 @@ export function parseDays(plan) {
     const i = plan.indexOf("MEAL PLAN");
     const j = plan.indexOf("RECIPES");
     const k = plan.indexOf("SHOPPING");
-    const end = j !== -1 ? j : k !== -1 ? k : plan.length;
+    const bounds = [j, k].filter((x) => x !== -1);
+    const end = bounds.length ? Math.min(...bounds) : plan.length;
     return i === -1 ? plan : plan.slice(i + 9, end);
   })();
   const parts = mealSection.split(/(?=\*{0,2}Day \d+\*{0,2}[:\s-])/i).filter(p => p.trim());
