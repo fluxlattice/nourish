@@ -803,27 +803,6 @@ select.control {
   text-transform: uppercase;
 }
 
-.photo-credit {
-  position: absolute;
-  bottom: 8px;
-  right: 9px;
-  background: rgba(13, 19, 16, 0.55);
-  backdrop-filter: blur(6px);
-  border-radius: 100px;
-  padding: 3px 9px;
-  color: rgba(246, 242, 233, 0.75);
-  font-size: 9.5px;
-  text-decoration: none;
-  max-width: 60%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.photo-credit:hover {
-  color: var(--ink);
-}
-
 .empty-note {
   background: var(--surface-soft);
   border: 1px solid var(--border);

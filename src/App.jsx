@@ -75,21 +75,7 @@ function MealPhoto({ query, type, icon, label, className }) {
           <span>{icon}</span>
         </div>
       )}
-      {hasPhoto && (
-        <>
-          <img src={photo.url} alt={query} loading="lazy" onError={() => setErrored(true)} />
-          {photo.photographer && (
-            <a
-              className="photo-credit"
-              href={(photo.photographerUrl || photo.unsplashUrl || "#") + "?utm_source=nourish&utm_medium=referral"}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {photo.photographer}
-            </a>
-          )}
-        </>
-      )}
+      {hasPhoto && <img src={photo.url} alt={query} loading="lazy" onError={() => setErrored(true)} />}
       {label && <span className="photo-label">{label}</span>}
     </div>
   );
