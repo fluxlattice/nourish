@@ -803,6 +803,20 @@ select.control {
   text-transform: uppercase;
 }
 
+.photo-credit-line {
+  display: block;
+  padding: 5px 15px 0;
+  color: var(--ink-faint);
+  font-size: 9.5px;
+  text-align: right;
+  text-decoration: none;
+  background: var(--surface-soft);
+}
+
+.photo-credit-line:hover {
+  color: var(--ink-muted);
+}
+
 .empty-note {
   background: var(--surface-soft);
   border: 1px solid var(--border);

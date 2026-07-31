@@ -68,16 +68,28 @@ function MealPhoto({ query, type, icon, label, className }) {
   const hasPhoto = loaded && photo?.url && !errored;
 
   return (
-    <div className={className}>
-      {!loaded && <div className="photo-skeleton" />}
-      {loaded && !hasPhoto && (
-        <div className={"photo-fallback " + type}>
-          <span>{icon}</span>
-        </div>
+    <>
+      <div className={className}>
+        {!loaded && <div className="photo-skeleton" />}
+        {loaded && !hasPhoto && (
+          <div className={"photo-fallback " + type}>
+            <span>{icon}</span>
+          </div>
+        )}
+        {hasPhoto && <img src={photo.url} alt={query} loading="lazy" onError={() => setErrored(true)} />}
+        {label && <span className="photo-label">{label}</span>}
+      </div>
+      {hasPhoto && photo.photographer && (
+        <a
+          className="photo-credit-line"
+          href={(photo.photographerUrl || photo.unsplashUrl || "#") + "?utm_source=nourish&utm_medium=referral"}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Photo: {photo.photographer}
+        </a>
       )}
-      {hasPhoto && <img src={photo.url} alt={query} loading="lazy" onError={() => setErrored(true)} />}
-      {label && <span className="photo-label">{label}</span>}
-    </div>
+    </>
   );
 }
 
