@@ -600,7 +600,6 @@ export default function App() {
     <div className="page">
       <div className="center">
         <div className="brand">
-          <div className="brand-mark">🌿</div>
           <h1 className="brand-name">Nourish</h1>
           <p className="brand-tag">A Little Recipe Box</p>
         </div>
