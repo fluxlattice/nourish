@@ -635,21 +635,16 @@ export default function App() {
                 >
                   {step === 0 && (
                     <div className="welcome">
-                      <div className="welcome-icon">👋</div>
+                      <p className="welcome-greeting">Hello,</p>
                       <h2 className="step-title">Welcome to Nourish</h2>
                       <p className="step-sub">
                         Answer 4 quick questions and get a fully personalized 7-day meal plan with recipes, a shopping
                         list, and tips tailored to your budget and goals.
                       </p>
                       <div className="feature-grid">
-                        {[
-                          ["🎯", "Goal-based"],
-                          ["💰", "Budget-aware"],
-                          ["🥗", "Diet-friendly"],
-                        ].map(([icon, label]) => (
-                          <div key={label} className="feature">
-                            <div className="feature-icon">{icon}</div>
-                            <div className="feature-label">{label}</div>
+                        {["Goal-based", "Budget-aware", "Diet-friendly"].map((label) => (
+                          <div key={label} className="feature-label">
+                            {label}
                           </div>
                         ))}
                       </div>
