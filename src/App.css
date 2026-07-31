@@ -803,25 +803,18 @@ select.control {
   text-transform: uppercase;
 }
 
-.photo-credit {
-  position: absolute;
-  bottom: 8px;
-  right: 9px;
-  background: rgba(13, 19, 16, 0.55);
-  backdrop-filter: blur(6px);
-  border-radius: 100px;
-  padding: 3px 9px;
-  color: rgba(246, 242, 233, 0.75);
+.photo-credit-line {
+  display: block;
+  padding: 5px 15px 0;
+  color: var(--ink-faint);
   font-size: 9.5px;
+  text-align: right;
   text-decoration: none;
-  max-width: 60%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: var(--surface-soft);
 }
 
-.photo-credit:hover {
-  color: var(--ink);
+.photo-credit-line:hover {
+  color: var(--ink-muted);
 }
 
 .empty-note {
