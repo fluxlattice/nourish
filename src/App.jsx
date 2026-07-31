@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { getSection, parseDays, parseRecipes, classifyMealType } from "./lib/planParser";
+import { canNext as canNextStep, toggleRestriction } from "./lib/formHelpers";
 
 const DIETARY = [
   {id:"gluten-free",label:"Gluten-Free",icon:"🌾"},
@@ -102,87 +104,10 @@ function PlanView({plan, profile, onRestart}) {
 
   const goalLabel = profile.goal==="lose"?"Weight Loss":profile.goal==="gain"?"Build Muscle":"Balanced";
 
-  const getSection = (key, next) => {
-    const i = plan.indexOf(key);
-    if (i === -1) return "";
-    const start = i + key.length;
-    const j = next ? plan.indexOf(next, start) : plan.length;
-    return (j === -1 ? plan.slice(start) : plan.slice(start, j)).trim();
-  };
-
-  const parseDays = () => {
-    const days = [];
-    const mealSection = (() => {
-      const i = plan.indexOf("MEAL PLAN");
-      const j = plan.indexOf("RECIPES");
-      const k = plan.indexOf("SHOPPING");
-      const end = j !== -1 ? j : k !== -1 ? k : plan.length;
-      return i === -1 ? plan : plan.slice(i + 9, end);
-    })();
-    const parts = mealSection.split(/(?=\*{0,2}Day \d+\*{0,2}[:\s\-])/i).filter(p => p.trim());
-    parts.forEach(part => {
-      const titleMatch = part.match(/Day (\d+)/i);
-      if (!titleMatch) return;
-      const dayNum = parseInt(titleMatch[1]);
-      const lines = part.split("\n").filter(l => l.trim());
-      const meals = [];
-      let currentMeal = null;
-      lines.slice(1).forEach(line => {
-        const l = line.trim();
-        if (!l) return;
-        if (/^(breakfast|lunch|dinner|snack)/i.test(l)) {
-          if (currentMeal) meals.push(currentMeal);
-          currentMeal = { type: l.split(/[:\-]/)[0].trim(), content: l.replace(/^[^:\-]+[:\-]\s*/, "") };
-        } else if (currentMeal) {
-          currentMeal.content += " " + l;
-        }
-      });
-      if (currentMeal) meals.push(currentMeal);
-      days.push({ day: dayNum, meals });
-    });
-    const seen = new Set();
-    return days.filter(d => {
-      if (seen.has(d.day)) return false;
-      seen.add(d.day);
-      return true;
-    }).slice(0, 7);
-  };
-
-  const parseRecipes = () => {
-    const recipesRawText = getSection("RECIPES", "SHOPPING");
-    const byDay = {};
-    
-    const chunks = recipesRawText.split(/(?=Day \d+ - )/i).filter(p => p.trim());
-    
-    chunks.forEach(chunk => {
-      const headerMatch = chunk.match(/Day (\d+) - ([^:]+):\s*([^\n]+)/i);
-      if (!headerMatch) return;
-      const dayNum = parseInt(headerMatch[1]);
-      const mealType = headerMatch[2].trim();
-      const mealName = headerMatch[3].trim();
-      const ingMatch = chunk.match(/Ingredients?:\s*([\s\S]+?)(?=Steps?:|$)/i);
-      const stepsMatch = chunk.match(/Steps?:\s*([\s\S]+?)(?=Day \d+ -|$)/i);
-      if (!byDay[dayNum]) byDay[dayNum] = [];
-      byDay[dayNum].push({
-        type: mealType,
-        name: mealName,
-        ingredients: ingMatch ? ingMatch[1].trim() : "",
-        steps: stepsMatch ? stepsMatch[1].trim() : ""
-      });
-    });
-    
-    return byDay;
-  };
-
-  const days = parseDays();
-  const recipeDays = parseRecipes();
-  const shoppingText = getSection("SHOPPING", "TIPS");
-  const tipsText = getSection("TIPS", null);
-  console.log("SHOPPING:", shoppingText.slice(0, 200));
-  console.log("TIPS:", tipsText.slice(0, 200));
-  console.log("Full plan length:", plan.length);
-  console.log("SHOPPING index:", plan.indexOf("SHOPPING"));
-  console.log("TIPS index:", plan.indexOf("TIPS"));
+  const days = parseDays(plan);
+  const recipeDays = parseRecipes(plan);
+  const shoppingText = getSection(plan, "SHOPPING", "TIPS");
+  const tipsText = getSection(plan, "TIPS", null);
 
   const mealIcons = { breakfast:"☀️", lunch:"🌤", dinner:"🌙", snack:"🍎" };
   const mealColors = { breakfast:"rgba(255,200,80,0.1)", lunch:"rgba(80,200,180,0.1)", dinner:"rgba(130,100,255,0.1)", snack:"rgba(255,130,100,0.1)" };
@@ -220,7 +145,7 @@ function PlanView({plan, profile, onRestart}) {
         <div style={{animation:"fadeScaleIn 0.3s ease forwards"}}>
           <div style={{marginBottom:"8px",color:"rgba(255,255,255,0.4)",fontSize:"12px",letterSpacing:"1px",textTransform:"uppercase"}}>Day {days[activeDay].day}</div>
           {days[activeDay].meals.length > 0 ? days[activeDay].meals.map((meal,i)=>{
-            const type = meal.type.toLowerCase().includes("breakfast")?"breakfast":meal.type.toLowerCase().includes("lunch")?"lunch":meal.type.toLowerCase().includes("snack")?"snack":"dinner";
+            const type = classifyMealType(meal.type);
             return (
               <div key={i} style={{background:mealColors[type]||"rgba(255,255,255,0.05)",borderRadius:"14px",border:"1px solid rgba(255,255,255,0.08)",padding:"14px",marginBottom:"10px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
@@ -246,7 +171,7 @@ function PlanView({plan, profile, onRestart}) {
           <div key={i} style={{background:"rgba(255,255,255,0.04)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.08)",padding:"16px",marginBottom:"12px"}}>
             <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"12px"}}>
               <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"linear-gradient(135deg,#86C575,#4ECDC4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:"700",color:"#0a1f0a",flexShrink:0}}>
-                {meal.type.toLowerCase().includes("breakfast")?"☀️":meal.type.toLowerCase().includes("lunch")?"🌤":meal.type.toLowerCase().includes("snack")?"🍎":"🌙"}
+                {{breakfast:"☀️",lunch:"🌤",snack:"🍎",dinner:"🌙"}[classifyMealType(meal.type)]}
               </div>
               <div>
                 <div style={{color:"rgba(255,255,255,0.45)",fontSize:"10px",fontWeight:"600",letterSpacing:"1px",textTransform:"uppercase"}}>{meal.type}</div>
@@ -351,8 +276,8 @@ export default function App() {
   const [p, setP] = useState({goal:"lose",age:"",weight:"",height:"",gender:"female",activity:"moderate",meals:"3",skill:"beginner",restrictions:[],budget:"",calories:""});
 
   const upd = (k,v) => setP(prev=>({...prev,[k]:v}));
-  const toggleR = r => setP(prev=>({...prev,restrictions:prev.restrictions.includes(r)?prev.restrictions.filter(x=>x!==r):[...prev.restrictions,r]}));
-  const canNext = () => { if(step===1) return p.age&&p.weight&&p.height; if(step===3) return p.budget; return true; };
+  const toggleR = r => setP(prev=>({...prev,restrictions:toggleRestriction(prev.restrictions,r)}));
+  const canNext = () => canNextStep(step, p);
 
   const generate = async () => {
     setLoading(true); setError(null);
