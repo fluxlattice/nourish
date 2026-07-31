@@ -75,6 +75,27 @@ describe('parseDays', () => {
     expect(days).toHaveLength(1);
   });
 
+  it('stops the last day at SHOPPING even when RECIPES appears later, after TIPS', () => {
+    // Mirrors the real shape produced by the app: MEAL PLAN, SHOPPING, TIPS, then a
+    // RECIPES section appended afterwards from a second API call.
+    const plan = [
+      'MEAL PLAN',
+      'Day 1',
+      'Breakfast: Oatmeal (300 cal) - warm and hearty.',
+      'SHOPPING',
+      'PRODUCE',
+      '- Oats - $3',
+      'TIPS',
+      '1. Prep ahead.',
+      'RECIPES',
+      'Day 1 - Breakfast: Oatmeal',
+    ].join('\n');
+
+    const days = parseDays(plan);
+    expect(days).toHaveLength(1);
+    expect(days[0].meals[0].content).toBe('Oatmeal (300 cal) - warm and hearty.');
+  });
+
   it('returns an empty array when there is no MEAL PLAN section and no day markers', () => {
     expect(parseDays('just some unrelated text')).toEqual([]);
   });

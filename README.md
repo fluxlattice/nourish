@@ -1,3 +1,12 @@
+# Nourish
+
+## Environment variables
+
+Set these in your deployment platform (e.g. Vercel project settings):
+
+- `ANTHROPIC_API_KEY` — required. Used by `api/chat.js` to generate the meal plan, shopping list, tips, and recipes.
+- `UNSPLASH_ACCESS_KEY` — optional. Used by `api/photo.js` to attach a real photo to each meal/recipe card via the [Unsplash API](https://unsplash.com/developers). Without it, `api/photo.js` returns `{ url: null }` and the app falls back to a tinted icon per meal type — no errors, no broken images.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

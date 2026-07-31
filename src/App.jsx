@@ -29,6 +29,72 @@ const ACTIVITIES = [
 
 const STEP_NAMES = ["Intro", "Profile", "Goals & Activity", "Budget & Diet"];
 
+const photoCache = new Map();
+
+function dishNameFromMealContent(content) {
+  return content.split(/\s*\(/)[0].trim();
+}
+
+function usePhoto(query) {
+  const key = (query || "").trim().toLowerCase();
+  const [photo, setPhoto] = useState(() => (key && photoCache.has(key) ? photoCache.get(key) : undefined));
+  const loaded = photo !== undefined;
+
+  useEffect(() => {
+    if (!key || photoCache.has(key)) return;
+    let cancelled = false;
+    fetch("/api/photo?q=" + encodeURIComponent(query))
+      .then((r) => (r.ok ? r.json() : { url: null }))
+      .then((data) => {
+        const result = data?.url ? data : null;
+        photoCache.set(key, result);
+        if (!cancelled) setPhoto(result);
+      })
+      .catch(() => {
+        photoCache.set(key, null);
+        if (!cancelled) setPhoto(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, query]);
+
+  return { photo: photo || null, loaded };
+}
+
+function MealPhoto({ query, type, icon, label, className }) {
+  const { photo, loaded } = usePhoto(query);
+  const [errored, setErrored] = useState(false);
+  const hasPhoto = loaded && photo?.url && !errored;
+
+  return (
+    <div className={className}>
+      {!loaded && <div className="photo-skeleton" />}
+      {loaded && !hasPhoto && (
+        <div className={"photo-fallback " + type}>
+          <span>{icon}</span>
+        </div>
+      )}
+      {hasPhoto && (
+        <>
+          <img src={photo.url} alt={query} loading="lazy" onError={() => setErrored(true)} />
+          {photo.photographer && (
+            <a
+              className="photo-credit"
+              href={(photo.photographerUrl || photo.unsplashUrl || "#") + "?utm_source=nourish&utm_medium=referral"}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {photo.photographer}
+            </a>
+          )}
+        </>
+      )}
+      {label && <span className="photo-label">{label}</span>}
+    </div>
+  );
+}
+
 function Progress({ step }) {
   return (
     <div className="progress">
@@ -146,11 +212,16 @@ function PlanView({ plan, profile, onRestart }) {
               const type = classifyMealType(meal.type);
               return (
                 <div key={i} className="meal-card">
-                  <div className="meal-card-head">
-                    <span className={"meal-badge " + type}>{mealIcons[type] || "🍽"}</span>
-                    <span className="meal-type">{meal.type}</span>
+                  <MealPhoto
+                    className="meal-photo"
+                    query={dishNameFromMealContent(meal.content)}
+                    type={type}
+                    icon={mealIcons[type] || "🍽"}
+                    label={meal.type}
+                  />
+                  <div className="meal-card-body">
+                    <p className="meal-text">{meal.content}</p>
                   </div>
-                  <p className="meal-text">{meal.content}</p>
                 </div>
               );
             })
@@ -167,41 +238,44 @@ function PlanView({ plan, profile, onRestart }) {
           {(recipeDays[days[activeDay]?.day] || []).length > 0 ? (
             (recipeDays[days[activeDay]?.day] || []).map((meal, i) => (
               <div key={i} className="recipe-card">
-                <div className="recipe-head">
-                  <div className="recipe-avatar">{mealIcons[classifyMealType(meal.type)]}</div>
-                  <div>
-                    <div className="recipe-eyebrow">{meal.type}</div>
-                    <div className="recipe-name">{meal.name}</div>
-                  </div>
+                <MealPhoto
+                  className="recipe-photo"
+                  query={meal.name}
+                  type={classifyMealType(meal.type)}
+                  icon={mealIcons[classifyMealType(meal.type)]}
+                  label={meal.type}
+                />
+                <div className="recipe-card-body">
+                  <div className="recipe-name">{meal.name}</div>
+                  {meal.ingredients && (
+                    <div>
+                      <div className="recipe-section-title ingredients">Ingredients</div>
+                      {meal.ingredients
+                        .split("\n")
+                        .filter((l) => l.trim())
+                        .map((ing, j) => (
+                          <div key={j} className="ingredient-row">
+                            <span className="ingredient-dot" />
+                            <span>{ing.replace(/^-\s*/, "").trim()}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                  {meal.steps && (
+                    <div>
+                      <div className="recipe-section-title steps">Steps</div>
+                      {meal.steps
+                        .split("\n")
+                        .filter((l) => l.trim())
+                        .map((step, j) => (
+                          <div key={j} className="step-row">
+                            <div className="step-badge">{j + 1}</div>
+                            <span>{step.replace(/^\d+\.\s*/, "").trim()}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
-                {meal.ingredients && (
-                  <div>
-                    <div className="recipe-section-title ingredients">Ingredients</div>
-                    {meal.ingredients
-                      .split("\n")
-                      .filter((l) => l.trim())
-                      .map((ing, j) => (
-                        <div key={j} className="ingredient-row">
-                          <span className="ingredient-dot" />
-                          <span>{ing.replace(/^-\s*/, "").trim()}</span>
-                        </div>
-                      ))}
-                  </div>
-                )}
-                {meal.steps && (
-                  <div>
-                    <div className="recipe-section-title steps">Steps</div>
-                    {meal.steps
-                      .split("\n")
-                      .filter((l) => l.trim())
-                      .map((step, j) => (
-                        <div key={j} className="step-row">
-                          <div className="step-badge">{j + 1}</div>
-                          <span>{step.replace(/^\d+\.\s*/, "").trim()}</span>
-                        </div>
-                      ))}
-                  </div>
-                )}
               </div>
             ))
           ) : (
