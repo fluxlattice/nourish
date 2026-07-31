@@ -343,43 +343,27 @@ select.control {
   text-align: center;
 }
 
-.welcome-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: var(--gold-soft);
-  border: 2px dashed var(--gold-border);
+.welcome-greeting {
+  font-family: var(--font-display);
   font-size: 26px;
-  margin-bottom: 16px;
-  transform: rotate(-4deg);
+  font-weight: 600;
+  color: var(--ink-muted);
+  margin: 0 0 -6px;
 }
 
 .feature-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
+  gap: 6px;
   margin-bottom: 26px;
 }
 
-.feature {
-  background: var(--card-alt);
-  border: 1.5px dashed rgba(58, 46, 34, 0.25);
-  border-radius: var(--radius-sm);
-  padding: 14px 6px;
-}
-
-.feature-icon {
-  font-size: 19px;
-  margin-bottom: 6px;
-}
-
 .feature-label {
-  color: var(--ink-muted);
-  font-size: 12px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.15;
 }
 
 /* ---------- chips ---------- */
