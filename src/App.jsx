@@ -4,14 +4,14 @@ import { getSection, parseDays, parseRecipes, classifyMealType } from "./lib/pla
 import { canNext as canNextStep, toggleRestriction } from "./lib/formHelpers";
 
 const DIETARY = [
-  { id: "gluten-free", label: "Gluten-Free", icon: "🌾" },
-  { id: "dairy-free", label: "Dairy-Free", icon: "🥛" },
-  { id: "vegan", label: "Vegan", icon: "🌿" },
-  { id: "vegetarian", label: "Vegetarian", icon: "🥦" },
-  { id: "keto", label: "Keto", icon: "🥑" },
-  { id: "paleo", label: "Paleo", icon: "🍖" },
-  { id: "nut-free", label: "Nut-Free", icon: "🥜" },
-  { id: "low-sodium", label: "Low Sodium", icon: "🧂" },
+  { id: "gluten-free", label: "Gluten-Free" },
+  { id: "dairy-free", label: "Dairy-Free" },
+  { id: "vegan", label: "Vegan" },
+  { id: "vegetarian", label: "Vegetarian" },
+  { id: "keto", label: "Keto" },
+  { id: "paleo", label: "Paleo" },
+  { id: "nut-free", label: "Nut-Free" },
+  { id: "low-sodium", label: "Low Sodium" },
 ];
 
 const GOALS = [
@@ -746,8 +746,7 @@ export default function App() {
                             onClick={() => toggleR(d.id)}
                             className={"chip" + (p.restrictions.includes(d.id) ? " is-selected" : "")}
                           >
-                            <span>{d.icon}</span>
-                            <span>{d.label}</span>
+                            {d.label}
                           </button>
                         ))}
                       </div>
