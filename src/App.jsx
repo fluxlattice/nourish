@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { getSection, parseDays, parseRecipes, classifyMealType } from "./lib/planParser";
 import { canNext as canNextStep, toggleRestriction } from "./lib/formHelpers";
+import { describeZipForPricing } from "./lib/groceryIndex";
 
 const DIETARY = [
   { id: "gluten-free", label: "Gluten-Free" },
@@ -485,7 +486,7 @@ export default function App() {
     setLoading(true);
     setError(null);
 
-    const userLocation = p.zip ? "ZIP code " + p.zip : "the United States";
+    const userLocation = p.zip ? await describeZipForPricing(p.zip) : "the United States";
 
     const weekly = Math.round((Number(p.budget) || 300) / 4);
     const goalLabel = p.goal === "lose" ? "Weight Loss" : p.goal === "gain" ? "Build Muscle" : "Stay Balanced";
