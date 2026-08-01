@@ -463,6 +463,7 @@ export default function App() {
     restrictions: [],
     budget: "",
     calories: "",
+    zip: "",
   });
 
   const upd = (k, v) => setP((prev) => ({ ...prev, [k]: v }));
@@ -484,26 +485,7 @@ export default function App() {
     setLoading(true);
     setError(null);
 
-    let userLocation = "United States";
-    try {
-      const coords = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-      });
-      const geoRes = await fetch(
-        "https://nominatim.openstreetmap.org/reverse?lat=" +
-          coords.coords.latitude +
-          "&lon=" +
-          coords.coords.longitude +
-          "&format=json"
-      );
-      const geoData = await geoRes.json();
-      const city = geoData.address?.city || geoData.address?.town || geoData.address?.county || "";
-      const state = geoData.address?.state || "";
-      const country = geoData.address?.country || "United States";
-      userLocation = [city, state, country].filter(Boolean).join(", ");
-    } catch (e) {
-      userLocation = "United States";
-    }
+    const userLocation = p.zip ? "ZIP code " + p.zip : "the United States";
 
     const weekly = Math.round((Number(p.budget) || 300) / 4);
     const goalLabel = p.goal === "lose" ? "Weight Loss" : p.goal === "gain" ? "Build Muscle" : "Stay Balanced";
@@ -783,6 +765,18 @@ export default function App() {
                             ≈ ${Math.round(p.budget / 4)}/week · ≈ ${Math.round(p.budget / 30)}/day
                           </div>
                         )}
+                      </div>
+                      <div className="field">
+                        <label className="label">ZIP Code (optional)</label>
+                        <input
+                          className="control"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={10}
+                          value={p.zip}
+                          onChange={(e) => upd("zip", e.target.value)}
+                          placeholder="For local grocery pricing"
+                        />
                       </div>
                       <div className="field">
                         <label className="label">Daily Calorie Target (optional)</label>
