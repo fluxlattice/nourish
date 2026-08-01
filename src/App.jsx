@@ -2,16 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { getSection, parseDays, parseRecipes, classifyMealType } from "./lib/planParser";
 import { canNext as canNextStep, toggleRestriction } from "./lib/formHelpers";
+import { describeZipForPricing } from "./lib/groceryIndex";
 
 const DIETARY = [
-  { id: "gluten-free", label: "Gluten-Free", icon: "🌾" },
-  { id: "dairy-free", label: "Dairy-Free", icon: "🥛" },
-  { id: "vegan", label: "Vegan", icon: "🌿" },
-  { id: "vegetarian", label: "Vegetarian", icon: "🥦" },
-  { id: "keto", label: "Keto", icon: "🥑" },
-  { id: "paleo", label: "Paleo", icon: "🍖" },
-  { id: "nut-free", label: "Nut-Free", icon: "🥜" },
-  { id: "low-sodium", label: "Low Sodium", icon: "🧂" },
+  { id: "gluten-free", label: "Gluten-Free" },
+  { id: "dairy-free", label: "Dairy-Free" },
+  { id: "vegan", label: "Vegan" },
+  { id: "vegetarian", label: "Vegetarian" },
+  { id: "keto", label: "Keto" },
+  { id: "paleo", label: "Paleo" },
+  { id: "nut-free", label: "Nut-Free" },
+  { id: "low-sodium", label: "Low Sodium" },
 ];
 
 const GOALS = [
@@ -463,6 +464,7 @@ export default function App() {
     restrictions: [],
     budget: "",
     calories: "",
+    zip: "",
   });
 
   const upd = (k, v) => setP((prev) => ({ ...prev, [k]: v }));
@@ -484,26 +486,7 @@ export default function App() {
     setLoading(true);
     setError(null);
 
-    let userLocation = "United States";
-    try {
-      const coords = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
-      });
-      const geoRes = await fetch(
-        "https://nominatim.openstreetmap.org/reverse?lat=" +
-          coords.coords.latitude +
-          "&lon=" +
-          coords.coords.longitude +
-          "&format=json"
-      );
-      const geoData = await geoRes.json();
-      const city = geoData.address?.city || geoData.address?.town || geoData.address?.county || "";
-      const state = geoData.address?.state || "";
-      const country = geoData.address?.country || "United States";
-      userLocation = [city, state, country].filter(Boolean).join(", ");
-    } catch (e) {
-      userLocation = "United States";
-    }
+    const userLocation = p.zip ? await describeZipForPricing(p.zip) : "the United States";
 
     const weekly = Math.round((Number(p.budget) || 300) / 4);
     const goalLabel = p.goal === "lose" ? "Weight Loss" : p.goal === "gain" ? "Build Muscle" : "Stay Balanced";
@@ -764,8 +747,7 @@ export default function App() {
                             onClick={() => toggleR(d.id)}
                             className={"chip" + (p.restrictions.includes(d.id) ? " is-selected" : "")}
                           >
-                            <span>{d.icon}</span>
-                            <span>{d.label}</span>
+                            {d.label}
                           </button>
                         ))}
                       </div>
@@ -783,6 +765,18 @@ export default function App() {
                             ≈ ${Math.round(p.budget / 4)}/week · ≈ ${Math.round(p.budget / 30)}/day
                           </div>
                         )}
+                      </div>
+                      <div className="field">
+                        <label className="label">ZIP Code (optional)</label>
+                        <input
+                          className="control"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={10}
+                          value={p.zip}
+                          onChange={(e) => upd("zip", e.target.value)}
+                          placeholder="For local grocery pricing"
+                        />
                       </div>
                       <div className="field">
                         <label className="label">Daily Calorie Target (optional)</label>
