@@ -1,0 +1,6 @@
+/* The full Nourish stylesheet — what applications import.
+   Kept as two separate files so tooling can consume the token layer on its own:
+   `tokens.css` is the design decisions, `components.css` is what spends them. */
+
+@import "./tokens.css";
+@import "./components.css";

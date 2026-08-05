@@ -1,0 +1,141 @@
+{
+  "pkg": "@nourish/ui",
+  "globalName": "NourishUI",
+  "projectId": "8b38e3d0-3f04-4cff-a2c1-4c15209fe329",
+  "shape": "package",
+  "buildCmd": "npm --prefix packages/ui run build",
+  "cssEntry": "dist/components.css",
+  "tokensPkg": "@nourish/ui",
+  "tokensGlob": "dist/tokens.css",
+  "docsDir": "docs",
+  "guidelinesGlob": "docs/guides/**/*.md",
+  "provider": {
+    "component": "Page"
+  },
+  "overrides": {
+    "Page": {
+      "viewport": "520x640"
+    },
+    "RecipeBox": {
+      "viewport": "520x540"
+    },
+    "Brand": {
+      "viewport": "520x260"
+    },
+    "CardStack": {
+      "viewport": "520x400"
+    },
+    "IndexCard": {
+      "viewport": "520x500"
+    },
+    "Actions": {
+      "viewport": "520x220"
+    },
+    "FieldPair": {
+      "viewport": "520x400"
+    },
+    "ScrollPanel": {
+      "viewport": "520x600"
+    },
+    "Progress": {
+      "viewport": "520x220"
+    },
+    "DayTabs": {
+      "viewport": "520x200"
+    },
+    "Segmented": {
+      "viewport": "520x260"
+    },
+    "SwipeHint": {
+      "viewport": "520x260"
+    },
+    "StepTitle": {
+      "viewport": "520x320"
+    },
+    "StepSub": {
+      "viewport": "520x420"
+    },
+    "FieldLabel": {
+      "viewport": "520x380"
+    },
+    "Hint": {
+      "viewport": "520x320"
+    },
+    "WelcomeGreeting": {
+      "viewport": "520x490"
+    },
+    "DayHeading": {
+      "viewport": "520x470"
+    },
+    "TextField": {
+      "viewport": "520x260"
+    },
+    "SelectField": {
+      "viewport": "520x240"
+    },
+    "Chip": {
+      "viewport": "520x340"
+    },
+    "ChipGroup": {
+      "viewport": "520x360"
+    },
+    "Button": {
+      "viewport": "520x220"
+    },
+    "GoalCard": {
+      "viewport": "520x560"
+    },
+    "ActivityCard": {
+      "viewport": "520x400"
+    },
+    "ActivityGrid": {
+      "viewport": "520x420"
+    },
+    "FeatureGrid": {
+      "viewport": "520x320"
+    },
+    "ErrorNote": {
+      "viewport": "520x400"
+    },
+    "EmptyNote": {
+      "viewport": "520x240"
+    },
+    "LoadingRing": {
+      "viewport": "520x300"
+    },
+    "LoadingView": {
+      "viewport": "520x480"
+    },
+    "PlanHeader": {
+      "viewport": "520x560"
+    },
+    "Polaroid": {
+      "viewport": "520x360"
+    },
+    "MealRow": {
+      "viewport": "520x620"
+    },
+    "RecipeEntry": {
+      "viewport": "520x660"
+    },
+    "RecipeSectionTitle": {
+      "viewport": "520x380"
+    },
+    "IngredientRow": {
+      "viewport": "520x380"
+    },
+    "StepRow": {
+      "viewport": "520x420"
+    },
+    "ShoppingRow": {
+      "viewport": "520x400"
+    },
+    "ShoppingCategory": {
+      "viewport": "520x360"
+    },
+    "TipCard": {
+      "viewport": "520x540"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
