@@ -23,7 +23,8 @@
     "*.css"
   ],
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "prepare": "node build.mjs"
   },
   "peerDependencies": {
     "react": ">=18",
