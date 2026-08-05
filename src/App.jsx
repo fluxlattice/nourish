@@ -1,5 +1,46 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
+import {
+  Actions,
+  ActivityCard,
+  ActivityGrid,
+  Brand,
+  Button,
+  CardStack,
+  Chip,
+  ChipGroup,
+  DayHeading,
+  DayTabs,
+  EmptyNote,
+  ErrorNote,
+  FeatureGrid,
+  FieldLabel,
+  FieldPair,
+  GoalCard,
+  IndexCard,
+  IngredientRow,
+  LoadingView,
+  MealRow,
+  Page,
+  PlanHeader,
+  Polaroid,
+  Progress,
+  RecipeBox,
+  RecipeEntry,
+  RecipeSectionTitle,
+  ScrollPanel,
+  Segmented,
+  SelectField,
+  ShoppingCategory,
+  ShoppingRow,
+  StepRow,
+  StepSub,
+  StepTitle,
+  SwipeHint,
+  TextField,
+  TipCard,
+  WelcomeGreeting,
+} from "@nourish/ui";
 import { getSection, parseDays, parseRecipes, classifyMealType } from "./lib/planParser";
 import { canNext as canNextStep, toggleRestriction } from "./lib/formHelpers";
 import { describeZipForPricing } from "./lib/groceryIndex";
@@ -28,7 +69,35 @@ const ACTIVITIES = [
   { id: "very", label: "Very Active", desc: "Daily intense exercise" },
 ];
 
+const GENDERS = [
+  { value: "female", label: "Female" },
+  { value: "male", label: "Male" },
+  { value: "other", label: "Other" },
+];
+
+const SKILLS = [
+  { value: "beginner", label: "Beginner — quick simple meals" },
+  { value: "intermediate", label: "Intermediate — comfortable cooking" },
+  { value: "advanced", label: "Advanced — love to cook" },
+];
+
+const MEALS_PER_DAY = [
+  { value: "2", label: "2 meals" },
+  { value: "3", label: "3 meals" },
+  { value: "3+", label: "3 meals + snacks" },
+];
+
 const STEP_NAMES = ["Intro", "Profile", "Goals & Activity", "Budget & Diet"];
+
+const LOADING_TIPS = [
+  "Calculating your calorie targets…",
+  "Balancing your macros…",
+  "Building your shopping list…",
+  "Adding recipes you'll actually want to cook…",
+  "Almost ready…",
+];
+
+const MEAL_ICONS = { breakfast: "☀️", lunch: "🌤", dinner: "🌙", snack: "🍎" };
 
 const photoCache = new Map();
 
@@ -63,35 +132,29 @@ function usePhoto(query) {
   return { photo: photo || null, loaded };
 }
 
+// Fetches the photo, then hands presentation to the design system's Polaroid.
 function MealPhoto({ query, type, icon, tilt = "left", size }) {
   const { photo, loaded } = usePhoto(query);
   const [errored, setErrored] = useState(false);
   const hasPhoto = loaded && photo?.url && !errored;
 
   return (
-    <div className="polaroid-wrap">
-      <div className={"polaroid" + (size === "lg" ? " polaroid-lg" : "") + (tilt === "right" ? " tilt-right" : "")}>
-        <div className="polaroid-frame">
-          {!loaded && <div className="photo-skeleton" />}
-          {loaded && !hasPhoto && (
-            <div className={"photo-fallback " + type}>
-              <span>{icon}</span>
-            </div>
-          )}
-          {hasPhoto && <img src={photo.url} alt={query} loading="lazy" onError={() => setErrored(true)} />}
-        </div>
-      </div>
-      {hasPhoto && photo.photographer && (
-        <a
-          className="photo-credit-line"
-          href={(photo.photographerUrl || photo.unsplashUrl || "#") + "?utm_source=nourish&utm_medium=referral"}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {photo.photographer}
-        </a>
-      )}
-    </div>
+    <Polaroid
+      src={hasPhoto ? photo.url : undefined}
+      alt={query}
+      loading={!loaded}
+      type={type}
+      fallbackIcon={icon}
+      tilt={tilt}
+      size={size}
+      credit={hasPhoto ? photo.photographer : undefined}
+      creditHref={
+        hasPhoto
+          ? (photo.photographerUrl || photo.unsplashUrl || "#") + "?utm_source=nourish&utm_medium=referral"
+          : undefined
+      }
+      onImageError={() => setErrored(true)}
+    />
   );
 }
 
@@ -156,60 +219,12 @@ function useSwipeCard({ onSwipeLeft, onSwipeRight, enabled = true }) {
 
 // Wrapping component (not just a hook call) so giving it a `key` from the
 // parent resets its drag state cleanly whenever the card underneath changes.
-function SwipeCard({ className, onSwipeLeft, onSwipeRight, enabled, children }) {
+function SwipeCard({ onSwipeLeft, onSwipeRight, enabled, children }) {
   const { handlers, style } = useSwipeCard({ onSwipeLeft, onSwipeRight, enabled });
   return (
-    <div className={className} {...handlers} style={style}>
+    <IndexCard style={style} {...handlers}>
       {children}
-    </div>
-  );
-}
-
-function Progress({ step }) {
-  return (
-    <div className="progress">
-      <div className="tab-row">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className={"tab-clip" + (i <= step ? " is-filled" : "")} />
-        ))}
-      </div>
-      <div className="progress-label">
-        Card {step + 1} of 4
-        <small>{STEP_NAMES[step]}</small>
-      </div>
-    </div>
-  );
-}
-
-function LoadingView() {
-  const tips = [
-    "Calculating your calorie targets…",
-    "Balancing your macros…",
-    "Building your shopping list…",
-    "Adding recipes you'll actually want to cook…",
-    "Almost ready…",
-  ];
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((x) => (x + 1) % tips.length), 2200);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <div className="loading">
-      <div className="loading-ring">
-        <div className="track" />
-        <div className="spin" />
-        <div className="spin-slow" />
-        <div className="icon">✏️</div>
-      </div>
-      <h3 className="loading-title">Building your plan</h3>
-      <p className="loading-tip">{tips[i]}</p>
-      <div className="loading-dots">
-        {[0, 1, 2].map((j) => (
-          <span key={j} style={{ animationDelay: j * 0.2 + "s" }} />
-        ))}
-      </div>
-    </div>
+    </IndexCard>
   );
 }
 
@@ -231,204 +246,184 @@ function PlanView({ plan, profile, onRestart }) {
   const shoppingText = getSection(plan, "SHOPPING", "TIPS");
   const tipsText = getSection(plan, "TIPS", "RECIPES");
 
-  const mealIcons = { breakfast: "☀️", lunch: "🌤", dinner: "🌙", snack: "🍎" };
-
   const dayCardEnabled = dayTab === "meals" || dayTab === "recipes";
   const hasPrevDay = activeDay > 0;
   const hasNextDay = activeDay < days.length - 1;
+  const currentDay = days[activeDay];
 
   return (
     <div className="fade-in">
-      <div className="plan-head">
-        <div className="plan-badge">✓ Plan ready</div>
-        <h2 className="plan-title">Your {goalLabel} Plan</h2>
-        <div className="plan-stats">
-          <span className="plan-stat">${profile.budget}/month</span>
-          <span className="plan-stat">{profile.meals} meals/day</span>
-        </div>
-      </div>
+      <PlanHeader
+        badge="✓ Plan ready"
+        title={`Your ${goalLabel} Plan`}
+        stats={[`$${profile.budget}/month`, `${profile.meals} meals/day`]}
+      />
 
-      <div className="day-selector">
-        {days.map((d, i) => (
-          <button key={i} onClick={() => setActiveDay(i)} className={"day-pill" + (activeDay === i ? " is-active" : "")}>
-            Day {d.day}
-          </button>
-        ))}
-      </div>
+      <DayTabs
+        days={days.map((d) => d.day)}
+        value={currentDay?.day}
+        onChange={(day) => setActiveDay(days.findIndex((d) => d.day === day))}
+      />
 
-      <div className="card-stack">
-        <div className="stack-peek stack-peek-2" />
-        <div className="stack-peek stack-peek-1" />
+      <CardStack>
         <SwipeCard
           key={activeDay}
-          className="index-card"
           enabled={dayCardEnabled}
           onSwipeLeft={hasNextDay ? () => setActiveDay((d) => d + 1) : undefined}
           onSwipeRight={hasPrevDay ? () => setActiveDay((d) => d - 1) : undefined}
         >
-          <div className="segmented">
-            {[
-              ["meals", "🍽", "Meals"],
-              ["recipes", "📖", "Recipes"],
-            ].map(([id, icon, label]) => (
-              <button key={id} onClick={() => setDayTab(id)} className={dayTab === id ? "is-active" : ""}>
-                {icon} {label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            items={[
+              { id: "meals", label: "🍽 Meals" },
+              { id: "recipes", label: "📖 Recipes" },
+            ]}
+            value={dayTab}
+            onChange={setDayTab}
+          />
 
-          {dayTab === "meals" && days[activeDay] && (
+          {dayTab === "meals" && currentDay && (
             <div className="fade-in">
-              <div className="day-heading">Day {days[activeDay].day}</div>
-              {days[activeDay].meals.length > 0 ? (
-                days[activeDay].meals.map((meal, i) => {
+              <DayHeading>Day {currentDay.day}</DayHeading>
+              {currentDay.meals.length > 0 ? (
+                currentDay.meals.map((meal, i) => {
                   const type = classifyMealType(meal.type);
                   return (
-                    <div key={i} className="meal-row">
-                      <MealPhoto
-                        query={dishNameFromMealContent(meal.content)}
-                        type={type}
-                        icon={mealIcons[type] || "🍽"}
-                        tilt={i % 2 === 0 ? "left" : "right"}
-                      />
-                      <div>
-                        <span className="meal-type-tag">{meal.type}</span>
-                        <p className="meal-text">{meal.content}</p>
-                      </div>
-                    </div>
+                    <MealRow
+                      key={i}
+                      type={meal.type}
+                      photo={
+                        <MealPhoto
+                          query={dishNameFromMealContent(meal.content)}
+                          type={type}
+                          icon={MEAL_ICONS[type] || "🍽"}
+                          tilt={i % 2 === 0 ? "left" : "right"}
+                        />
+                      }
+                    >
+                      {meal.content}
+                    </MealRow>
                   );
                 })
               ) : (
-                <div className="empty-note">
-                  <p>No meals found for this day.</p>
-                </div>
+                <EmptyNote>No meals found for this day.</EmptyNote>
               )}
             </div>
           )}
 
           {dayTab === "recipes" && (
-            <div className="fade-in scroll-panel">
-              {(recipeDays[days[activeDay]?.day] || []).length > 0 ? (
-                (recipeDays[days[activeDay]?.day] || []).map((meal, i) => (
-                  <div key={i} className="recipe-card">
-                    <div className="recipe-head-row">
+            <ScrollPanel className="fade-in">
+              {(recipeDays[currentDay?.day] || []).length > 0 ? (
+                (recipeDays[currentDay?.day] || []).map((meal, i) => (
+                  <RecipeEntry
+                    key={i}
+                    name={meal.name}
+                    type={meal.type}
+                    photo={
                       <MealPhoto
                         query={meal.name}
                         type={classifyMealType(meal.type)}
-                        icon={mealIcons[classifyMealType(meal.type)]}
+                        icon={MEAL_ICONS[classifyMealType(meal.type)]}
                         tilt={i % 2 === 0 ? "left" : "right"}
                         size="lg"
                       />
-                      <div>
-                        <div className="recipe-eyebrow">{meal.type}</div>
-                        <div className="recipe-name">{meal.name}</div>
-                      </div>
-                    </div>
+                    }
+                  >
                     {meal.ingredients && (
                       <div>
-                        <div className="recipe-section-title ingredients">Ingredients</div>
+                        <RecipeSectionTitle tone="ingredients">Ingredients</RecipeSectionTitle>
                         {meal.ingredients
                           .split("\n")
                           .filter((l) => l.trim())
                           .map((ing, j) => (
-                            <div key={j} className="ingredient-row">
-                              <span className="ingredient-check" />
-                              <span>{ing.replace(/^-\s*/, "").trim()}</span>
-                            </div>
+                            <IngredientRow key={j}>{ing.replace(/^-\s*/, "").trim()}</IngredientRow>
                           ))}
                       </div>
                     )}
                     {meal.steps && (
                       <div>
-                        <div className="recipe-section-title steps">Steps</div>
+                        <RecipeSectionTitle tone="steps">Steps</RecipeSectionTitle>
                         {meal.steps
                           .split("\n")
                           .filter((l) => l.trim())
                           .map((step, j) => (
-                            <div key={j} className="step-row">
-                              <div className="step-badge">{j + 1}</div>
-                              <span>{step.replace(/^\d+\.\s*/, "").trim()}</span>
-                            </div>
+                            <StepRow key={j} number={j + 1}>
+                              {step.replace(/^\d+\.\s*/, "").trim()}
+                            </StepRow>
                           ))}
                       </div>
                     )}
-                  </div>
+                  </RecipeEntry>
                 ))
               ) : (
-                <div className="empty-note">
-                  <p>Generate a new plan to see recipes here.</p>
-                </div>
+                <EmptyNote>Generate a new plan to see recipes here.</EmptyNote>
               )}
-            </div>
+            </ScrollPanel>
           )}
 
           {(hasPrevDay || hasNextDay) && (
-            <span className="swipe-hint">
+            <SwipeHint>
               {hasPrevDay ? "← " : ""}swipe{hasNextDay ? " →" : ""}
-            </span>
+            </SwipeHint>
           )}
         </SwipeCard>
-      </div>
+      </CardStack>
 
-      <div className="segmented" style={{ marginTop: "16px", marginBottom: "0" }}>
-        {[
-          ["shopping", "🛒 Shopping"],
-          ["tips", "💡 Tips"],
-        ].map(([id, label]) => (
-          <button key={id} onClick={() => setDayTab(id)} className={dayTab === id ? "is-active" : ""}>
-            {label}
-          </button>
-        ))}
+      <div style={{ marginTop: "16px", marginBottom: "0" }}>
+        <Segmented
+          items={[
+            { id: "shopping", label: "🛒 Shopping" },
+            { id: "tips", label: "💡 Tips" },
+          ]}
+          value={dayTab}
+          onChange={setDayTab}
+        />
       </div>
 
       {dayTab === "shopping" && (
-        <div className="shopping-panel" style={{ marginTop: "12px" }}>
-          {shoppingText
-            .split("\n")
-            .filter((l) => l.trim())
-            .map((line, i) => {
-              const isCat = /^(produce|proteins|grains|dairy|pantry|total)/i.test(line.trim());
-              return isCat ? (
-                <div key={i} className="shopping-category">
-                  {line.trim()}
-                </div>
-              ) : (
-                <div key={i} className="shopping-row">
-                  <span className="shopping-check" />
-                  <span>{line.replace(/^[-•]\s*/, "").trim()}</span>
-                </div>
-              );
-            })}
+        <div style={{ marginTop: "12px" }}>
+          <ScrollPanel size="panel">
+            {shoppingText
+              .split("\n")
+              .filter((l) => l.trim())
+              .map((line, i) => {
+                const isCat = /^(produce|proteins|grains|dairy|pantry|total)/i.test(line.trim());
+                return isCat ? (
+                  <ShoppingCategory key={i}>{line.trim()}</ShoppingCategory>
+                ) : (
+                  <ShoppingRow key={i}>{line.replace(/^[-•]\s*/, "").trim()}</ShoppingRow>
+                );
+              })}
+          </ScrollPanel>
         </div>
       )}
 
       {dayTab === "tips" && (
-        <div className="tips-panel" style={{ marginTop: "12px" }}>
-          {tipsText
-            .split("\n")
-            .filter((l) => l.trim())
-            .map((line, i) => {
-              const isNum = /^\d+\./.test(line.trim());
-              return isNum ? (
-                <div key={i} className="tip-card">
-                  <div className="tip-badge">{line.trim()[0]}</div>
-                  <p className="tip-text">{line.replace(/^\d+\.\s*/, "")}</p>
-                </div>
-              ) : (
-                <p key={i} className="plain">
-                  {line}
-                </p>
-              );
-            })}
+        <div style={{ marginTop: "12px" }}>
+          <ScrollPanel size="tips">
+            {tipsText
+              .split("\n")
+              .filter((l) => l.trim())
+              .map((line, i) => {
+                const isNum = /^\d+\./.test(line.trim());
+                return isNum ? (
+                  <TipCard key={i} number={line.trim()[0]}>
+                    {line.replace(/^\d+\.\s*/, "")}
+                  </TipCard>
+                ) : (
+                  <p key={i} className="plain">
+                    {line}
+                  </p>
+                );
+              })}
+          </ScrollPanel>
         </div>
       )}
 
-      <div className="actions-grid">
-        <button onClick={onRestart} className="btn btn-ghost">
+      <Actions layout="grid">
+        <Button variant="ghost" onClick={onRestart}>
           ← Start Over
-        </button>
-        <button
-          className="btn btn-primary"
+        </Button>
+        <Button
           onClick={() => {
             const b = new Blob([plan], { type: "text/plain" });
             const u = URL.createObjectURL(b);
@@ -439,8 +434,8 @@ function PlanView({ plan, profile, onRestart }) {
           }}
         >
           ↓ Download
-        </button>
-      </div>
+        </Button>
+      </Actions>
     </div>
   );
 }
@@ -580,250 +575,201 @@ export default function App() {
   const canSwipeBack = step > 0;
 
   return (
-    <div className="page">
-      <div className="center">
-        <div className="brand">
-          <h1 className="brand-name">Nourish</h1>
-          <p className="brand-tag">A Little Recipe Box</p>
-        </div>
+    <Page>
+      <Brand name="Nourish" tagline="A Little Recipe Box" />
 
-        <div className="card">
-          {loading ? (
-            <LoadingView />
-          ) : plan ? (
-            <PlanView
-              plan={plan}
-              profile={p}
-              onRestart={() => {
-                setPlan(null);
-                setStep(0);
-                setError(null);
-              }}
-            />
-          ) : (
-            <>
-              <Progress step={step} />
-              {error && <div className="error-box">{error}</div>}
+      <RecipeBox>
+        {loading ? (
+          <LoadingView title="Building your plan" tips={LOADING_TIPS} />
+        ) : plan ? (
+          <PlanView
+            plan={plan}
+            profile={p}
+            onRestart={() => {
+              setPlan(null);
+              setStep(0);
+              setError(null);
+            }}
+          />
+        ) : (
+          <>
+            <Progress count={4} current={step} label={STEP_NAMES[step]} />
+            {error && <ErrorNote>{error}</ErrorNote>}
 
-              <div className="card-stack">
-                <div className="stack-peek stack-peek-2" />
-                <div className="stack-peek stack-peek-1" />
-                <div key={animKey} className={direction === "forward" ? "step-enter" : "step-back"}>
+            <CardStack>
+              <div key={animKey} className={direction === "forward" ? "step-enter" : "step-back"}>
                 <SwipeCard
-                  className="index-card"
                   enabled={idle}
                   onSwipeLeft={canSwipeForward ? goForward : undefined}
                   onSwipeRight={canSwipeBack ? goBack : undefined}
                 >
                   {step === 0 && (
                     <div className="welcome">
-                      <p className="welcome-greeting">Hello,</p>
-                      <h2 className="step-title">Welcome to Nourish</h2>
-                      <p className="step-sub">
+                      <WelcomeGreeting>Hello,</WelcomeGreeting>
+                      <StepTitle>Welcome to Nourish</StepTitle>
+                      <StepSub>
                         Answer 4 quick questions and get a fully personalized 7-day meal plan with recipes, a shopping
                         list, and tips tailored to your budget and goals.
-                      </p>
-                      <div className="feature-grid">
-                        {["Goal-based", "Budget-aware", "Diet-friendly"].map((label) => (
-                          <div key={label} className="feature-label">
-                            {label}
-                          </div>
-                        ))}
-                      </div>
-                      <button className="btn btn-primary" onClick={goForward} style={{ width: "100%" }}>
-                        Get Started →
-                      </button>
+                      </StepSub>
+                      <FeatureGrid labels={["Goal-based", "Budget-aware", "Diet-friendly"]} />
+                      <Button onClick={goForward}>Get Started →</Button>
                     </div>
                   )}
 
                   {step === 1 && (
                     <div>
-                      <h2 className="step-title">About you</h2>
-                      <p className="step-sub">Used to calculate your ideal calorie targets.</p>
-                      <div className="grid-2">
-                        <div className="field">
-                          <label className="label">Age</label>
-                          <input
-                            className="control"
-                            type="number"
-                            value={p.age}
-                            onChange={(e) => upd("age", e.target.value)}
-                            placeholder="28"
-                          />
-                        </div>
-                        <div className="field">
-                          <label className="label">Gender</label>
-                          <select className="control" value={p.gender} onChange={(e) => upd("gender", e.target.value)}>
-                            <option value="female">Female</option>
-                            <option value="male">Male</option>
-                            <option value="other">Other</option>
-                          </select>
-                        </div>
-                        <div className="field">
-                          <label className="label">Weight (lbs)</label>
-                          <input
-                            className="control"
-                            type="number"
-                            value={p.weight}
-                            onChange={(e) => upd("weight", e.target.value)}
-                            placeholder="160"
-                          />
-                        </div>
-                        <div className="field">
-                          <label className="label">Height (in)</label>
-                          <input
-                            className="control"
-                            type="number"
-                            value={p.height}
-                            onChange={(e) => upd("height", e.target.value)}
-                            placeholder="67"
-                          />
-                        </div>
-                      </div>
-                      <div className="field" style={{ marginTop: "2px" }}>
-                        <label className="label">Cooking Skill</label>
-                        <select className="control" value={p.skill} onChange={(e) => upd("skill", e.target.value)}>
-                          <option value="beginner">Beginner — quick simple meals</option>
-                          <option value="intermediate">Intermediate — comfortable cooking</option>
-                          <option value="advanced">Advanced — love to cook</option>
-                        </select>
-                      </div>
-                      <div className="field">
-                        <label className="label">Meals Per Day</label>
-                        <select className="control" value={p.meals} onChange={(e) => upd("meals", e.target.value)}>
-                          <option value="2">2 meals</option>
-                          <option value="3">3 meals</option>
-                          <option value="3+">3 meals + snacks</option>
-                        </select>
-                      </div>
+                      <StepTitle>About you</StepTitle>
+                      <StepSub>Used to calculate your ideal calorie targets.</StepSub>
+                      <FieldPair>
+                        <TextField
+                          label="Age"
+                          type="number"
+                          value={p.age}
+                          onChange={(v) => upd("age", v)}
+                          placeholder="28"
+                        />
+                        <SelectField
+                          label="Gender"
+                          value={p.gender}
+                          onChange={(v) => upd("gender", v)}
+                          options={GENDERS}
+                        />
+                        <TextField
+                          label="Weight (lbs)"
+                          type="number"
+                          value={p.weight}
+                          onChange={(v) => upd("weight", v)}
+                          placeholder="160"
+                        />
+                        <TextField
+                          label="Height (in)"
+                          type="number"
+                          value={p.height}
+                          onChange={(v) => upd("height", v)}
+                          placeholder="67"
+                        />
+                      </FieldPair>
+                      <SelectField
+                        label="Cooking Skill"
+                        value={p.skill}
+                        onChange={(v) => upd("skill", v)}
+                        options={SKILLS}
+                      />
+                      <SelectField
+                        label="Meals Per Day"
+                        value={p.meals}
+                        onChange={(v) => upd("meals", v)}
+                        options={MEALS_PER_DAY}
+                      />
                     </div>
                   )}
 
                   {step === 2 && (
                     <div>
-                      <h2 className="step-title">Your goal &amp; activity</h2>
-                      <p className="step-sub">We'll tailor your entire plan around this.</p>
+                      <StepTitle>Your goal &amp; activity</StepTitle>
+                      <StepSub>We'll tailor your entire plan around this.</StepSub>
                       {GOALS.map((g) => (
-                        <button
+                        <GoalCard
                           key={g.id}
+                          icon={g.icon}
+                          label={g.label}
+                          description={g.desc}
+                          selected={p.goal === g.id}
                           onClick={() => upd("goal", g.id)}
-                          className={"goal-card" + (p.goal === g.id ? " is-selected" : "")}
-                        >
-                          <span className="goal-icon">{g.icon}</span>
-                          <div style={{ textAlign: "left" }}>
-                            <div className="goal-title">{g.label}</div>
-                            <div className="goal-desc">{g.desc}</div>
-                          </div>
-                          {p.goal === g.id && <span className="goal-check">✓</span>}
-                        </button>
+                        />
                       ))}
-                      <label className="label" style={{ marginTop: "10px" }}>
-                        Activity Level
-                      </label>
-                      <div className="activity-grid">
-                        {ACTIVITIES.map((a) => (
-                          <button
-                            key={a.id}
-                            onClick={() => upd("activity", a.id)}
-                            className={"activity-card" + (p.activity === a.id ? " is-selected" : "")}
-                          >
-                            <div className="activity-title">{a.label}</div>
-                            <div className="activity-desc">{a.desc}</div>
-                          </button>
-                        ))}
+                      <div style={{ marginTop: "10px" }}>
+                        <FieldLabel>Activity Level</FieldLabel>
                       </div>
+                      <ActivityGrid>
+                        {ACTIVITIES.map((a) => (
+                          <ActivityCard
+                            key={a.id}
+                            label={a.label}
+                            description={a.desc}
+                            selected={p.activity === a.id}
+                            onClick={() => upd("activity", a.id)}
+                          />
+                        ))}
+                      </ActivityGrid>
                     </div>
                   )}
 
                   {step === 3 && (
                     <div>
-                      <h2 className="step-title">Diet &amp; Budget</h2>
-                      <p className="step-sub">Customize your plan to fit your lifestyle.</p>
-                      <label className="label">Dietary restrictions (select all that apply)</label>
-                      <div className="chip-group">
+                      <StepTitle>Diet &amp; Budget</StepTitle>
+                      <StepSub>Customize your plan to fit your lifestyle.</StepSub>
+                      <FieldLabel>Dietary restrictions (select all that apply)</FieldLabel>
+                      <ChipGroup>
                         {DIETARY.map((d) => (
-                          <button
+                          <Chip
                             key={d.id}
+                            label={d.label}
+                            selected={p.restrictions.includes(d.id)}
                             onClick={() => toggleR(d.id)}
-                            className={"chip" + (p.restrictions.includes(d.id) ? " is-selected" : "")}
-                          >
-                            {d.label}
-                          </button>
+                          />
                         ))}
-                      </div>
-                      <div className="field">
-                        <label className="label">Monthly Food Budget ($)</label>
-                        <input
-                          className="control"
-                          type="number"
-                          value={p.budget}
-                          onChange={(e) => upd("budget", e.target.value)}
-                          placeholder="300"
-                        />
-                        {p.budget && (
-                          <div className="hint">
-                            ≈ ${Math.round(p.budget / 4)}/week · ≈ ${Math.round(p.budget / 30)}/day
-                          </div>
-                        )}
-                      </div>
-                      <div className="field">
-                        <label className="label">ZIP Code (optional)</label>
-                        <input
-                          className="control"
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={10}
-                          value={p.zip}
-                          onChange={(e) => upd("zip", e.target.value)}
-                          placeholder="For local grocery pricing"
-                        />
-                      </div>
-                      <div className="field">
-                        <label className="label">Daily Calorie Target (optional)</label>
-                        <input
-                          className="control"
-                          type="number"
-                          value={p.calories}
-                          onChange={(e) => upd("calories", e.target.value)}
-                          placeholder="Leave blank to auto-calculate"
-                        />
-                      </div>
+                      </ChipGroup>
+                      <TextField
+                        label="Monthly Food Budget ($)"
+                        type="number"
+                        value={p.budget}
+                        onChange={(v) => upd("budget", v)}
+                        placeholder="300"
+                        hint={
+                          p.budget
+                            ? `≈ $${Math.round(p.budget / 4)}/week · ≈ $${Math.round(p.budget / 30)}/day`
+                            : undefined
+                        }
+                      />
+                      <TextField
+                        label="ZIP Code (optional)"
+                        value={p.zip}
+                        inputMode="numeric"
+                        maxLength={10}
+                        onChange={(v) => upd("zip", v)}
+                        placeholder="For local grocery pricing"
+                      />
+                      <TextField
+                        label="Daily Calorie Target (optional)"
+                        type="number"
+                        value={p.calories}
+                        onChange={(v) => upd("calories", v)}
+                        placeholder="Leave blank to auto-calculate"
+                      />
                     </div>
                   )}
 
                   {(canSwipeBack || canSwipeForward) && (
-                    <span className="swipe-hint">
+                    <SwipeHint>
                       {canSwipeBack ? "← " : ""}swipe{canSwipeForward ? " →" : ""}
-                    </span>
+                    </SwipeHint>
                   )}
                 </SwipeCard>
-                </div>
               </div>
+            </CardStack>
 
-              {step > 0 && (
-                <div className="actions-row">
-                  <button onClick={goBack} className="btn btn-ghost">
-                    ← Back
-                  </button>
-                  <div style={{ flex: 1 }}>
-                    <button
-                      onClick={() => {
-                        if (step < 3) goForward();
-                        else generate();
-                      }}
-                      className={"btn " + (canNext() ? "btn-primary" : "btn-disabled")}
-                      disabled={!canNext()}
-                    >
-                      {step === 3 ? "Generate My Plan" : "Continue →"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-        <p className="footer-note">Not medical advice — consult a professional for personalized guidance.</p>
-      </div>
-    </div>
+            {step > 0 && (
+              <Actions>
+                <Button variant="ghost" onClick={goBack}>
+                  ← Back
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (step < 3) goForward();
+                    else generate();
+                  }}
+                  disabled={!canNext()}
+                >
+                  {step === 3 ? "Generate My Plan" : "Continue →"}
+                </Button>
+              </Actions>
+            )}
+          </>
+        )}
+      </RecipeBox>
+
+      <p className="footer-note">Not medical advice — consult a professional for personalized guidance.</p>
+    </Page>
   );
 }
